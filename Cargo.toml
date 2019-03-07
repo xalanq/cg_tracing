@@ -1,0 +1,7 @@
+[package]
+name = "rust-tracing"
+version = "0.1.0"
+authors = ["xalanq <xalanq@gmail.com>"]
+edition = "2018"
+
+[dependencies]
