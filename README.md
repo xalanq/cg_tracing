@@ -1,7 +1,7 @@
-# Rust Tracing
+# CG Tracing
 
-[![Build Status](https://travis-ci.org/xalanq/rust-tracing.svg?branch=master)](https://travis-ci.org/xalanq/rust-tracing)
-[![license](https://img.shields.io/badge/license-MIT-%23373737.svg)](https://raw.githubusercontent.com/xalanq/rust-tracing/master/LICENSE)
+[![Build Status](https://travis-ci.org/xalanq/cg_tracing.svg?branch=master)](https://travis-ci.org/xalanq/cg_tracing)
+[![license](https://img.shields.io/badge/license-MIT-%23373737.svg)](https://raw.githubusercontent.com/xalanq/cg_tracing/master/LICENSE)
 
 A Rust implement of path tracing and ray tracing in computer graphics.
 

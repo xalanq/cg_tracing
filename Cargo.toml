@@ -1,5 +1,5 @@
 [package]
-name = "rust-tracing"
+name = "cg_tracing"
 version = "0.1.0"
 authors = ["xalanq <xalanq@gmail.com>"]
 edition = "2018"
