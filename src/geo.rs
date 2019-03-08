@@ -18,12 +18,7 @@ pub struct Geo {
 
 impl Geo {
     pub fn new(position: Vct, emission: Vct, color: Vct, texture: Texture) -> Self {
-        Self {
-            position,
-            emission,
-            color,
-            texture,
-        }
+        Self { position, emission, color, texture }
     }
 }
 

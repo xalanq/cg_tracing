@@ -5,10 +5,12 @@ pub const EPS: Flt = 1e-4;
 pub fn clamp(x: Flt) -> Flt {
     if x < 0.0 {
         0.0
-    } else if x > 1.0 {
-        1.0
     } else {
-        x
+        if x > 1.0 {
+            1.0
+        } else {
+            x
+        }
     }
 }
 

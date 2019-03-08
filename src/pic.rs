@@ -11,15 +11,11 @@ pub struct Pic {
 
 impl Pic {
     pub fn new(w: usize, h: usize) -> Self {
-        Self {
-            w: w,
-            h: h,
-            c: vec![Vct::zero(); w * h],
-        }
+        Self { w, h, c: vec![Vct::zero(); w * h] }
     }
 
-    pub fn get(&mut self, x: usize, y: usize) -> &mut Vct {
-        &mut self.c[y * self.h + x]
+    pub fn set(&mut self, x: usize, y: usize, c: &Vct) {
+        self.c[y * self.h + x] = *c;
     }
 
     pub fn save_ppm(&self, filename: &str) {
@@ -29,10 +25,10 @@ impl Pic {
         let mut pb = ProgressBar::new((self.c.len() + 2) as u64);
         write!(file, "P3\n{} {}\n255\n", self.w, self.h).expect(errmsg);
         pb.inc();
-        for t in &self.c {
+        self.c.iter().for_each(|t| {
             pb.inc();
             write!(file, "{} {} {} ", to_byte(t.x), to_byte(t.y), to_byte(t.z)).expect(errmsg);
-        }
+        });
         file.flush().expect(errmsg);
         pb.inc();
         println!("Done!");

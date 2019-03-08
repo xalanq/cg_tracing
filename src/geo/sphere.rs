@@ -6,8 +6,8 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(r: Flt, g: Geo) -> Self {
-        Self { r, g }
+    pub fn new(r: Flt, g: Geo) -> Box<dyn Hittable> {
+        Box::new(Self { r, g })
     }
 }
 

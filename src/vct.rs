@@ -36,9 +36,8 @@ impl Vct {
         self.len2().sqrt()
     }
 
-    pub fn norm(&mut self) -> &Self {
-        *self /= self.len();
-        self
+    pub fn norm(&self) -> Self {
+        *self / self.len()
     }
 }
 
