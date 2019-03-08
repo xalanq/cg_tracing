@@ -1,5 +1,4 @@
-use crate::toByte;
-use crate::vct::Vct;
+use crate::{toByte, vct::Vct};
 use pbr::ProgressBar;
 use std::fs::File;
 use std::io::Write;

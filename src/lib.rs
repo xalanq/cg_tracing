@@ -15,6 +15,7 @@ pub fn toByte(x: Flt) -> u8 {
     (clamp(x).powf(1.0 / 2.2) * 255.0 + 0.5) as u8
 }
 
+pub mod geo;
 pub mod pic;
 pub mod ray;
 pub mod vct;
