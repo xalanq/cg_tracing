@@ -5,3 +5,4 @@ authors = ["xalanq <xalanq@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+pbr = "1.0.1"
