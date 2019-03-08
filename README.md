@@ -9,6 +9,7 @@ A Rust implement of path tracing and ray tracing in computer graphics.
 
 * Fast: Render with multithread
 * Structural: More OOP
+* Expandable: Easy to add a geometric object
 * Progress bar: Use [a8m/pb](https://github.com/a8m/pb)
 
 # Reference

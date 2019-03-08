@@ -1,4 +1,4 @@
-use crate::{geo::*, ray::Ray, Flt, EPS};
+use crate::{geo::*, ray::Ray, utils::EPS, Flt};
 
 pub struct Sphere {
     pub r: Flt,
