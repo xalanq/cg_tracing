@@ -7,7 +7,7 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn new(origin: Vct, direct: Vct) -> Ray {
-        Ray { origin, direct }
+    pub fn new(origin: Vct, direct: Vct) -> Self {
+        Self { origin, direct }
     }
 }
