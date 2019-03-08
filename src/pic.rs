@@ -1,4 +1,4 @@
-use crate::{toByte, vct::Vct};
+use crate::{to_byte, vct::Vct};
 use pbr::ProgressBar;
 use std::fs::File;
 use std::io::Write;
@@ -31,7 +31,7 @@ impl Pic {
         pb.inc();
         for t in &self.c {
             pb.inc();
-            write!(file, "{} {} {} ", toByte(t.x), toByte(t.y), toByte(t.z)).expect(errmsg);
+            write!(file, "{} {} {} ", to_byte(t.x), to_byte(t.y), to_byte(t.z)).expect(errmsg);
         }
         file.flush().expect(errmsg);
         pb.inc();

@@ -11,7 +11,7 @@ pub fn clamp(x: Flt) -> Flt {
     }
 }
 
-pub fn toByte(x: Flt) -> u8 {
+pub fn to_byte(x: Flt) -> u8 {
     (clamp(x).powf(1.0 / 2.2) * 255.0 + 0.5) as u8
 }
 
