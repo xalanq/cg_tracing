@@ -3,27 +3,27 @@ use pbr::ProgressBar;
 use rand::prelude::*;
 use rayon::prelude::*;
 use std::sync::Mutex;
-use std::time;
 use std::time::Duration;
+use std::time;
 
 pub struct World {
-    objs: Vec<Box<dyn Hittable>>,
-    cam: Ray,
-    sample: i32,
-    max_depth: i32,
-    thread_num: usize,
-    stack_size: usize,
-    ratio: Flt,
-    n1: Flt,
-    n2: Flt,
-    r0: Flt,
+    pub objs: Vec<Box<dyn Hittable>>,
+    pub cam: Ray,
+    pub sample: usize,
+    pub max_depth: usize,
+    pub thread_num: usize,
+    pub stack_size: usize,
+    pub ratio: Flt,
+    pub n1: Flt,
+    pub n2: Flt,
+    pub r0: Flt,
 }
 
 impl World {
     pub fn new(
         cam: Ray,
-        sample: i32,
-        max_depth: i32,
+        sample: usize,
+        max_depth: usize,
         thread_num: usize,
         stack_size: usize,
         ratio: Flt,
@@ -69,7 +69,7 @@ impl World {
         None
     }
 
-    fn trace(&self, r: &Ray, mut depth: i32, rng: &mut ThreadRng) -> Vct {
+    fn trace(&self, r: &Ray, mut depth: usize, rng: &mut ThreadRng) -> Vct {
         if let Some((g, pos, norm)) = self.find(r) {
             let mut cl = g.color;
             depth += 1;

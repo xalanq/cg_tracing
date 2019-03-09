@@ -1,6 +1,7 @@
 use crate::vct::Vct;
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Ray {
     pub origin: Vct,
     pub direct: Vct,

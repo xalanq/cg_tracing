@@ -8,16 +8,20 @@ A Rust implement of path tracing and ray tracing in computer graphics.
 # Feature
 
 - Very fast: Render with multithreads (Use [rayon](https://github.com/rayon-rs/rayon/))
-- Structural: More OOP
 - Expandable: Easy to add a geometric object
+- Json build: Build from json file, see example
+- Structural: More OOP
 - Progress bar: Use [a8m/pb](https://github.com/a8m/pb)
 
 # Usage
 
+## example
+
+see [./example/smallpt.rs](./example/smallpt.rs)
+
 ```rust
 extern crate cg_tracing;
 
-use cg_tracing::geo::sphere::Sphere;
 use cg_tracing::{geo::*, pic::*, ray::*, vct::*, world::*};
 
 fn main() {
@@ -31,7 +35,8 @@ fn main() {
     let thread_num = 0; // if set 0. thread number is the number of CPUs available(logical cores).
     let stack_size = 256 * 1024 * 1024;
     let ratio = 0.5135;
-    World::new(cam, sample, max_depth, thread_num, stack_size, ratio, 1.0, 1.5)
+    let (na, ng) = (1.0, 1.5);
+    World::new(cam, sample, max_depth, thread_num, stack_size, ratio, na, ng)
         .add(Sphere::new(1e5, Geo::new(Vct::new(1e5 + 1., 40.8, 81.6), z, c1, Texture::Diffuse)))
         .add(Sphere::new(1e5, Geo::new(Vct::new(-1e5 + 99., 40.8, 81.6), z, c2, Texture::Diffuse)))
         .add(Sphere::new(1e5, Geo::new(Vct::new(50., 40.8, 1e5), z, c3, Texture::Diffuse)))
@@ -50,7 +55,61 @@ fn main() {
             ),
         ))
         .render(&mut p);
-    p.save_ppm(&format!("./result/example_{}.ppm", sample));
+    p.save_ppm(&format!("example_{}.ppm", sample));
+}
+```
+
+## example (from json)
+
+see [./src/main.rs](./src/main.rs) and [./example/smallpt.json](./example/smallpt.json)
+
+```rust
+extern crate cg_tracing;
+
+fn main() {
+    let (w, mut p) = cg_tracing::from_json("./example/smallpt.json");
+    w.render(&mut p);
+    p.save_ppm(&format!("./result/example_{}.ppm", w.sample));
+}
+```
+
+```json
+{
+    "width": 1024,
+    "height": 768,
+    "sample": 200,
+    "thread_num": 0,
+    "stack_size": 267386880,
+    "max_depth": 10,
+    "ratio": 0.5135,
+    "Na": 1.0,
+    "Ng": 1.5,
+    "camera": {
+        "origin": { "x": 50.0, "y": 52.0,      "z": 295.6 },
+        "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  }
+    },
+    "objects": [{
+        "type": "Sphere",
+        "r": 100000.0,
+        "g": {
+            "position": { "x": 100001.0, "y": 40.8, "z": 81.6 },
+            "emission": { "x": 0.0,      "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.75,     "y": 0.25, "z": 0.25 },
+            "texture": "Diffuse"
+        }
+    }, {
+/* snip */
+/* see more details in ./example/smallpt.json */
+    }, {
+        "type": "Sphere",
+        "r": 600,
+        "g": {
+            "position": { "x": 50.0, "y": 681.33, "z": 81.6  },
+            "emission": { "x": 12.0, "y": 12.0,   "z": 12.0  },
+            "color":    { "x": 0.0,  "y": 0.0,    "z": 0.0   },
+            "texture": "Diffuse"
+        }
+    }]
 }
 ```
 

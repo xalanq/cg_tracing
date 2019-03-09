@@ -1,10 +1,11 @@
 use crate::Flt;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::ops::{Div, DivAssign, Mul, MulAssign};
 use std::ops::{Neg, Rem};
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Vct {
     pub x: Flt,
     pub y: Flt,

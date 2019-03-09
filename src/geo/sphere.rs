@@ -1,5 +1,6 @@
 use crate::{geo::*, ray::Ray, utils::EPS, Flt};
 
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Sphere {
     pub r: Flt,
     pub g: Geo,
