@@ -22,7 +22,7 @@ impl Geo {
     }
 }
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn get(&self) -> &Geo;
     fn hit(&self, r: &Ray) -> Option<Flt>;
 }

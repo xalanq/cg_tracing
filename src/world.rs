@@ -1,16 +1,18 @@
 use crate::{geo::*, pic::*, ray::*, utils::clamp, vct::*, Flt, PI};
 use pbr::ProgressBar;
 use rand::prelude::*;
+use rayon::prelude::*;
+use std::sync::Mutex;
+use std::time;
 use std::time::Duration;
 
-type VecHit = Vec<Box<dyn Hittable>>;
-
 pub struct World {
-    lock: VecHit,
+    objs: Vec<Box<dyn Hittable>>,
     cam: Ray,
     sample: i32,
-    depth: i32,
-    thread_num: i32,
+    max_depth: i32,
+    thread_num: usize,
+    stack_size: usize,
     ratio: Flt,
     n1: Flt,
     n2: Flt,
@@ -21,18 +23,20 @@ impl World {
     pub fn new(
         cam: Ray,
         sample: i32,
-        depth: i32,
-        thread_num: i32,
+        max_depth: i32,
+        thread_num: usize,
+        stack_size: usize,
         ratio: Flt,
         na: Flt,
         ng: Flt,
     ) -> Self {
         Self {
-            lock: Vec::new(),
+            objs: Vec::new(),
             cam,
             sample,
-            depth,
+            max_depth,
             thread_num,
+            stack_size,
             ratio,
             n1: na / ng,
             n2: ng / na,
@@ -41,14 +45,14 @@ impl World {
     }
 
     pub fn add(&mut self, obj: Box<dyn Hittable>) -> &mut Self {
-        self.lock.push(obj);
+        self.objs.push(obj);
         self
     }
 
-    fn find<'a>(&'a self, r: &Ray, objs: &'a VecHit) -> Option<(&'a Geo, Vct, Vct)> {
+    fn find<'a>(&'a self, r: &Ray) -> Option<(&'a Geo, Vct, Vct)> {
         let mut t: Flt = 1e30;
         let mut obj = None;
-        objs.iter().for_each(|o| {
+        self.objs.iter().for_each(|o| {
             if let Some(d) = o.hit(r) {
                 if d < t {
                     t = d;
@@ -65,11 +69,14 @@ impl World {
         None
     }
 
-    fn trace(&self, r: &Ray, mut depth: i32, rng: &mut ThreadRng, objs: &VecHit) -> Vct {
-        if let Some((g, pos, norm)) = self.find(r, objs) {
+    fn trace(&self, r: &Ray, mut depth: i32, rng: &mut ThreadRng) -> Vct {
+        if let Some((g, pos, norm)) = self.find(r) {
             let mut cl = g.color;
             depth += 1;
-            if depth > self.depth {
+            if depth > self.max_depth {
+                return g.emission;
+            }
+            if depth > 5 {
                 let p = cl.x.max(cl.y.max(cl.z));
                 if rng.gen::<Flt>() < p {
                     cl /= p;
@@ -91,18 +98,18 @@ impl World {
                         .norm();
                     let v = w % u;
                     let d = (u * r1.cos() + v * r1.sin()) * r2s + w * (1.0 - r2).sqrt();
-                    return self.trace(&Ray::new(pos, d.norm()), depth, rng, objs);
+                    return self.trace(&Ray::new(pos, d.norm()), depth, rng);
                 }
                 let refl = Ray::new(pos, r.direct - norm * (2.0 * nd));
                 if g.texture == Texture::Specular {
-                    return self.trace(&refl, depth, rng, objs);
+                    return self.trace(&refl, depth, rng);
                 }
                 let w = if nd < 0.0 { norm } else { -norm };
                 let (it, ddw) = (norm.dot(&w) > 0.0, r.direct.dot(&w));
                 let (n, sign) = if it { (self.n1, 1.0) } else { (self.n2, -1.0) };
                 let cos2t = 1.0 - n * n * (1.0 - ddw * ddw);
                 if cos2t < 0.0 {
-                    return self.trace(&refl, depth, rng, objs);
+                    return self.trace(&refl, depth, rng);
                 }
                 let td = (r.direct * n - norm * ((ddw * n + cos2t.sqrt()) * sign)).norm();
                 let refr = Ray::new(pos, td);
@@ -113,13 +120,12 @@ impl World {
                 if depth > 2 {
                     let p = 0.25 + 0.5 * re;
                     if rng.gen::<Flt>() < p {
-                        self.trace(&refl, depth, rng, objs) * (re / p)
+                        self.trace(&refl, depth, rng) * (re / p)
                     } else {
-                        self.trace(&refr, depth, rng, objs) * (tr / (1.0 - p))
+                        self.trace(&refr, depth, rng) * (tr / (1.0 - p))
                     }
                 } else {
-                    self.trace(&refl, depth, rng, objs) * re
-                        + self.trace(&refr, depth, rng, objs) * tr
+                    self.trace(&refl, depth, rng) * re + self.trace(&refr, depth, rng) * tr
                 }
             };
             return g.emission + cl * ff();
@@ -143,17 +149,24 @@ impl World {
         let cy = (cx % self.cam.direct).norm() * self.ratio;
         let sample = self.sample / 4;
         let inv = 1.0 / sample as Flt;
-        println!("w: {}, h: {}, sample: {}, actual sample: {}", w, h, self.sample, sample * 4);
         let mut pb = ProgressBar::new((w * h) as u64);
         pb.set_max_refresh_rate(Some(Duration::from_secs(1)));
-
         let mut data: Vec<(usize, usize)> = Vec::new();
         (0..w).for_each(|x| (0..h).for_each(|y| data.push((x, y))));
         data.shuffle(&mut rand::thread_rng());
+        let pb = Mutex::new(pb);
+        let p = Mutex::new(p);
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(self.thread_num)
+            .stack_size(self.stack_size)
+            .build_global()
+            .unwrap();
 
+        println!("w: {}, h: {}, sample: {}, actual sample: {}", w, h, self.sample, sample * 4);
         println!("start render with {} threads.", self.thread_num);
-        data.into_iter().for_each(|(x, y)| {
-            let objs = &self.lock;
+        let start_time = time::Instant::now();
+
+        data.into_par_iter().for_each(|(x, y)| {
             let mut sum = Vct::zero();
             let (fx, fy) = (x as Flt, y as Flt);
             for sx in 0..2 {
@@ -166,14 +179,19 @@ impl World {
                         let ccy = cy * (((fsy + 0.5 + Self::gend(&mut rng)) / 2.0 + fy) / fh - 0.5);
                         let d = ccx + ccy + self.cam.direct;
                         let r = Ray::new(self.cam.origin + d * 130.0, d.norm());
-                        c += self.trace(&r, 0, &mut rng, objs) * inv;
+                        c += self.trace(&r, 0, &mut rng) * inv;
                     }
                     sum += Vct::new(clamp(c.x), clamp(c.y), clamp(c.z)) * 0.25;
                 }
             }
-            p.set(x, h - y - 1, &sum);
-            pb.inc();
+            p.lock().unwrap().set(x, h - y - 1, &sum);
+            pb.lock().unwrap().inc();
         });
-        pb.finish_println("Rendering completed");
+
+        pb.lock().unwrap().finish_println("Rendering completed\n");
+        println!(
+            "Total cost {:.3} seconds.",
+            (time::Instant::now() - start_time).as_millis() as f64 / 1000.0
+        );
     }
 }
