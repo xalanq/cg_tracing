@@ -4,7 +4,7 @@ use cg_tracing::geo::sphere::Sphere;
 use cg_tracing::{geo::*, pic::*, ray::*, vct::*, world::*};
 
 fn main() {
-    let sample = 50;
+    let sample = 200;
     let z = Vct::zero();
     let (c1, c2) = (Vct::new(0.75, 0.25, 0.25), Vct::new(0.25, 0.25, 0.75));
     let (c3, c4) = (Vct::new(0.75, 0.75, 0.75), Vct::one() * 0.999);
@@ -13,8 +13,7 @@ fn main() {
     let depth = 5;
     let thread_num = 3;
     let ratio = 0.5135;
-    let mut world = World::new(cam, sample, depth, thread_num, ratio, 1.0, 1.5);
-    world
+    World::new(cam, sample, depth, thread_num, ratio, 1.0, 1.5)
         .add(Sphere::new(1e5, Geo::new(Vct::new(1e5 + 1., 40.8, 81.6), z, c1, Texture::Diffuse)))
         .add(Sphere::new(1e5, Geo::new(Vct::new(-1e5 + 99., 40.8, 81.6), z, c2, Texture::Diffuse)))
         .add(Sphere::new(1e5, Geo::new(Vct::new(50., 40.8, 1e5), z, c3, Texture::Diffuse)))
@@ -33,5 +32,5 @@ fn main() {
             ),
         ))
         .render(&mut p);
-    p.save_ppm(&format!("example_{}.ppm", sample));
+    p.save_ppm(&format!("./result/example_{}.ppm", sample));
 }

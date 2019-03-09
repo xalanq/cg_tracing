@@ -1,4 +1,4 @@
-pub type Flt = f32;
+pub type Flt = f64;
 pub const PI: Flt = std::f64::consts::PI as Flt;
 
 pub mod geo;

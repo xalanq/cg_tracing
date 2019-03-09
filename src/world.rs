@@ -45,11 +45,11 @@ impl World {
         self
     }
 
-    fn find<'a>(&self, r: &Ray, objs: &'a VecHit) -> Option<(&'a Geo, Vct, Vct)> {
+    fn find<'a>(&'a self, r: &Ray, objs: &'a VecHit) -> Option<(&'a Geo, Vct, Vct)> {
         let mut t: Flt = 1e30;
         let mut obj = None;
         objs.iter().for_each(|o| {
-            if let Some(d) = o.hit(&r) {
+            if let Some(d) = o.hit(r) {
                 if d < t {
                     t = d;
                     obj = Some(o);
@@ -127,16 +127,25 @@ impl World {
         Vct::zero()
     }
 
+    fn gend(rng: &mut ThreadRng) -> Flt {
+        let r = 2.0 * rng.gen::<Flt>();
+        if r < 1.0 {
+            r.sqrt() - 1.0
+        } else {
+            1.0 - (2.0 - r).sqrt()
+        }
+    }
+
     pub fn render(&self, p: &mut Pic) {
         let (w, h) = (p.w, p.h);
         let (fw, fh) = (w as Flt, h as Flt);
-        let cx = Vct::new(fw * self.ratio / fw, 0.0, 0.0);
+        let cx = Vct::new(fw * self.ratio / fh, 0.0, 0.0);
         let cy = (cx % self.cam.direct).norm() * self.ratio;
         let sample = self.sample / 4;
         let inv = 1.0 / sample as Flt;
         println!("w: {}, h: {}, sample: {}, actual sample: {}", w, h, self.sample, sample * 4);
         let mut pb = ProgressBar::new((w * h) as u64);
-        pb.set_max_refresh_rate(Some(Duration::from_millis(100)));
+        pb.set_max_refresh_rate(Some(Duration::from_secs(1)));
 
         let mut data: Vec<(usize, usize)> = Vec::new();
         (0..w).for_each(|x| (0..h).for_each(|y| data.push((x, y))));
@@ -145,15 +154,6 @@ impl World {
         println!("start render with {} threads.", self.thread_num);
         data.into_iter().for_each(|(x, y)| {
             let objs = &self.lock;
-            let mut rng = rand::thread_rng();
-            let mut gend = || {
-                let r = 2.0 * rng.gen::<Flt>();
-                if r < 1.0 {
-                    r.sqrt() - 1.0
-                } else {
-                    1.0 - (2.0 - r).sqrt()
-                }
-            };
             let mut sum = Vct::zero();
             let (fx, fy) = (x as Flt, y as Flt);
             for sx in 0..2 {
@@ -162,18 +162,18 @@ impl World {
                     let mut rng = rand::thread_rng();
                     for _ in 0..sample {
                         let (fsx, fsy) = (sx as Flt, sy as Flt);
-                        let ccx = cx * (((fsx + 0.5 + gend()) / 2.0 + fx) / fw - 0.5);
-                        let ccy = cy * (((fsy + 0.5 + gend()) / 2.0 + fy) / fh - 0.5);
+                        let ccx = cx * (((fsx + 0.5 + Self::gend(&mut rng)) / 2.0 + fx) / fw - 0.5);
+                        let ccy = cy * (((fsy + 0.5 + Self::gend(&mut rng)) / 2.0 + fy) / fh - 0.5);
                         let d = ccx + ccy + self.cam.direct;
                         let r = Ray::new(self.cam.origin + d * 130.0, d.norm());
-                        c += self.trace(&r, 0, &mut rng, &objs) * inv;
+                        c += self.trace(&r, 0, &mut rng, objs) * inv;
                     }
                     sum += Vct::new(clamp(c.x), clamp(c.y), clamp(c.z)) * 0.25;
                 }
             }
-            p.set(x, p.h - y - 1, &sum);
+            p.set(x, h - y - 1, &sum);
             pb.inc();
         });
-        println!("Rendering completed");
+        pb.finish_println("Rendering completed");
     }
 }
