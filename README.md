@@ -98,9 +98,7 @@ fn main() {
             "texture": "Diffuse"
         }
     }, {
-    .
-    .
-    .
+//snip
     }, {
         "type": "Sphere",
         "c": { "x": 50.0, "y": 681.33, "z": 81.6 },
@@ -118,7 +116,7 @@ fn main() {
 
 see [./src/geo/plane.rs](./src/geo/plane.rs)
 
-```
+```rust
 use crate::{geo::*, ray::*, utils::EPS, Flt};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
