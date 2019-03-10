@@ -67,7 +67,7 @@ see [./example/smallpt_json.rs](./example/smallpt_json.rs) and [./example/smallp
 extern crate cg_tracing;
 
 fn main() {
-    let (w, mut p) = cg_tracing::from_json("smallpt.json");
+    let (w, mut p) = cg_tracing::from_json("smallpt.json", None);
     w.render(&mut p);
     p.save_ppm(&format!("example_{}.ppm", w.sample));
 }
@@ -98,8 +98,9 @@ fn main() {
             "texture": "Diffuse"
         }
     }, {
-// snip
-// see more details in ./example/smallpt.json
+    .
+    .
+    .
     }, {
         "type": "Sphere",
         "c": { "x": 50.0, "y": 681.33, "z": 81.6 },
@@ -115,7 +116,59 @@ fn main() {
 
 ## Add your geometric object
 
-see [./src/geo/sphere.rs](./src/geo/sphere.rs)
+see [./src/geo/plane.rs](./src/geo/plane.rs)
+
+```
+use crate::{geo::*, ray::*, utils::EPS, Flt};
+
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub struct Plane {
+    pub p: Vct, // any point at plane
+    pub n: Vct, // normal vector of plane
+    pub g: Geo, // geometric info
+}
+
+impl Plane {
+    pub fn new(p: Vct, n: Vct, g: Geo) -> Box<dyn Hittable> {
+        Box::new(Self { p, n, g })
+    }
+
+    // just copy that func when you custom your object
+    pub fn from_json(v: Value) -> Box<dyn Hittable> {
+        Box::new(serde_json::from_value::<Self>(v).expect("Invalid Plane"))
+    }
+}
+
+impl Hittable for Plane {
+    fn hit_t(&self, r: &Ray) -> Option<Flt> {
+        let d = self.n.dot(&r.direct);
+        if d.abs() > EPS {
+            let t = self.n.dot(&(self.p - r.origin)) / d;
+            if t > EPS {
+                return Some(t);
+            }
+        }
+        None
+    }
+
+    // return geo, hit position, normal vector
+    fn hit(&self, r: &Ray, t: Flt) -> (&Geo, Vct, Vct) {
+        (
+            &self.g,
+            r.origin + r.direct * t,
+            if self.n.dot(&r.direct) > 0.0 { self.n } else { -self.n },
+        )
+    }
+}
+```
+
+if you want to use `from_json` with your object (e.g. `YourObj`)
+
+```rust
+let mut custom: HashMap<String, cg_tracing::FromJsonFunc> = HashMap::new();
+custom.insert(String::from("YourObj"), YourObj::from_json);
+let (w, mut p) = cg_tracing::from_json("some.json", Some(&custom));
+```
 
 # Reference
 

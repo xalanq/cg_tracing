@@ -8,14 +8,17 @@ pub mod utils;
 pub mod vct;
 pub mod world;
 
-use serde_json::Value;
-use std::fs;
-use ray::Ray;
-use world::World;
-use geo::Sphere;
+use geo::*;
 use pic::Pic;
+use ray::Ray;
+use serde_json::Value;
+use std::collections::HashMap;
+use std::fs;
+use world::World;
 
-pub fn from_json(filename: &str) -> (World, Pic) {
+pub type FromJsonFunc = fn(Value) -> Box<dyn Hittable>;
+
+pub fn from_json(filename: &str, custom: Option<&HashMap<String, FromJsonFunc>>) -> (World, Pic) {
     let data = fs::read_to_string(filename).expect(&format!("Unable to read {}", filename));
     let mut data: Value = serde_json::from_str(&data).expect("Cannot convert to json");
     let w: usize = serde_json::from_value(data["width"].take()).expect("Invalid width");
@@ -39,15 +42,20 @@ pub fn from_json(filename: &str) -> (World, Pic) {
                 let mut obj = _obj;
                 match obj["type"].take() {
                     Value::String(tp) => match tp.as_ref() {
-                        "Sphere" => {
-                            let s: Sphere =
-                                serde_json::from_value(obj).expect("Invalid Sphere");
-                            w.add(Box::new(s));
+                        "Sphere" => w.add(Sphere::from_json(obj)),
+                        "Plane" => w.add(Plane::from_json(obj)),
+                        _ => {
+                            if let Some(mp) = custom {
+                                if let Some(f) = mp.get(&tp) {
+                                    w.add(f(obj));
+                                    return;
+                                }
+                            }
+                            panic!("Unknown obj");
                         }
-                        _ => panic!("Unknown obj"),
                     },
                     _ => panic!("Invalid obj"),
-                }
+                };
             });
             (w, p)
         }
