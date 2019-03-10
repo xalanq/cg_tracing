@@ -37,18 +37,18 @@ fn main() {
     let ratio = 0.5135;
     let (na, ng) = (1.0, 1.5);
     World::new(cam, sample, max_depth, thread_num, stack_size, ratio, na, ng)
-        .add(Sphere::new(1e5, Geo::new(Vct::new(1e5 + 1., 40.8, 81.6), z, c1, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(-1e5 + 99., 40.8, 81.6), z, c2, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., 40.8, 1e5), z, c3, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., 40.8, -1e5 + 170.0), z, z, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., 1e5, 81.6), z, c3, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., -1e5 + 81.6, 81.6), z, c3, Texture::Diffuse)))
-        .add(Sphere::new(16.5, Geo::new(Vct::new(27., 16.5, 47.), z, c4, Texture::Specular)))
-        .add(Sphere::new(16.5, Geo::new(Vct::new(73., 16.5, 78.), z, c4, Texture::Refractive)))
+        .add(Sphere::new(Vct::new(1e5 + 1., 40.8, 81.6), 1e5, Geo::new(z, c1, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(-1e5 + 99., 40.8, 81.6), 1e5, Geo::new(z, c2, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., 40.8, 1e5), 1e5, Geo::new(z, c3, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., 40.8, -1e5 + 170.0), 1e5, Geo::new(z, z, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., 1e5, 81.6), 1e5, Geo::new(z, c3, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., -1e5 + 81.6, 81.6), 1e5, Geo::new(z, c3, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(27., 16.5, 47.), 16.5, Geo::new(z, c4, Texture::Specular)))
+        .add(Sphere::new(Vct::new(73., 16.5, 78.), 16.5, Geo::new(z, c4, Texture::Refractive)))
         .add(Sphere::new(
+            Vct::new(50., 681.6 - 0.27, 81.6),
             600.,
             Geo::new(
-                Vct::new(50., 681.6 - 0.27, 81.6),
                 Vct::new(12., 12., 12.),
                 z,
                 Texture::Diffuse,
@@ -61,15 +61,15 @@ fn main() {
 
 ## example (from json)
 
-see [./src/main.rs](./src/main.rs) and [./example/smallpt.json](./example/smallpt.json)
+see [./example/smallpt_json.rs](./example/smallpt_json.rs) and [./example/smallpt.json](./example/smallpt.json)
 
 ```rust
 extern crate cg_tracing;
 
 fn main() {
-    let (w, mut p) = cg_tracing::from_json("./example/smallpt.json");
+    let (w, mut p) = cg_tracing::from_json("smallpt.json");
     w.render(&mut p);
-    p.save_ppm(&format!("./result/example_{}.ppm", w.sample));
+    p.save_ppm(&format!("example_{}.ppm", w.sample));
 }
 ```
 
@@ -90,28 +90,32 @@ fn main() {
     },
     "objects": [{
         "type": "Sphere",
+        "c": { "x": 100001.0, "y": 40.8, "z": 81.6 },
         "r": 100000.0,
         "g": {
-            "position": { "x": 100001.0, "y": 40.8, "z": 81.6 },
-            "emission": { "x": 0.0,      "y": 0.0,  "z": 0.0  },
-            "color":    { "x": 0.75,     "y": 0.25, "z": 0.25 },
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.75, "y": 0.25, "z": 0.25 },
             "texture": "Diffuse"
         }
     }, {
-/* snip */
-/* see more details in ./example/smallpt.json */
+// snip
+// see more details in ./example/smallpt.json
     }, {
         "type": "Sphere",
+        "c": { "x": 50.0, "y": 681.33, "z": 81.6 },
         "r": 600,
         "g": {
-            "position": { "x": 50.0, "y": 681.33, "z": 81.6  },
-            "emission": { "x": 12.0, "y": 12.0,   "z": 12.0  },
-            "color":    { "x": 0.0,  "y": 0.0,    "z": 0.0   },
+            "emission": { "x": 12.0, "y": 12.0, "z": 12.0 },
+            "color":    { "x": 0.0,  "y": 0.0,  "z": 0.0  },
             "texture": "Diffuse"
         }
     }]
 }
 ```
+
+## Add your geometric object
+
+see [./src/geo/sphere.rs](./src/geo/sphere.rs)
 
 # Reference
 

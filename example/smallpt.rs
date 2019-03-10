@@ -15,18 +15,18 @@ fn main() {
     let ratio = 0.5135;
     let (na, ng) = (1.0, 1.5);
     World::new(cam, sample, max_depth, thread_num, stack_size, ratio, na, ng)
-        .add(Sphere::new(1e5, Geo::new(Vct::new(1e5 + 1., 40.8, 81.6), z, c1, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(-1e5 + 99., 40.8, 81.6), z, c2, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., 40.8, 1e5), z, c3, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., 40.8, -1e5 + 170.0), z, z, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., 1e5, 81.6), z, c3, Texture::Diffuse)))
-        .add(Sphere::new(1e5, Geo::new(Vct::new(50., -1e5 + 81.6, 81.6), z, c3, Texture::Diffuse)))
-        .add(Sphere::new(16.5, Geo::new(Vct::new(27., 16.5, 47.), z, c4, Texture::Specular)))
-        .add(Sphere::new(16.5, Geo::new(Vct::new(73., 16.5, 78.), z, c4, Texture::Refractive)))
+        .add(Sphere::new(Vct::new(1e5 + 1., 40.8, 81.6), 1e5, Geo::new(z, c1, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(-1e5 + 99., 40.8, 81.6), 1e5, Geo::new(z, c2, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., 40.8, 1e5), 1e5, Geo::new(z, c3, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., 40.8, -1e5 + 170.0), 1e5, Geo::new(z, z, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., 1e5, 81.6), 1e5, Geo::new(z, c3, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(50., -1e5 + 81.6, 81.6), 1e5, Geo::new(z, c3, Texture::Diffuse)))
+        .add(Sphere::new(Vct::new(27., 16.5, 47.), 16.5, Geo::new(z, c4, Texture::Specular)))
+        .add(Sphere::new(Vct::new(73., 16.5, 78.), 16.5, Geo::new(z, c4, Texture::Refractive)))
         .add(Sphere::new(
+            Vct::new(50., 681.6 - 0.27, 81.6),
             600.,
             Geo::new(
-                Vct::new(50., 681.6 - 0.27, 81.6),
                 Vct::new(12., 12., 12.),
                 z,
                 Texture::Diffuse,

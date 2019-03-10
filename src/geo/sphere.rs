@@ -1,25 +1,21 @@
-use crate::{geo::*, ray::Ray, utils::EPS, Flt};
+use crate::{geo::*, ray::*, utils::EPS, Flt};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Sphere {
-    pub r: Flt,
-    pub g: Geo,
+    pub c: Vct, // center
+    pub r: Flt, // radius
+    pub g: Geo, // geometric info
 }
 
 impl Sphere {
-    pub fn new(r: Flt, g: Geo) -> Box<dyn Hittable> {
-        Box::new(Self { r, g })
+    pub fn new(c: Vct, r: Flt, g: Geo) -> Box<dyn Hittable> {
+        Box::new(Self { c, r, g })
     }
 }
 
 impl Hittable for Sphere {
-    fn get(&self) -> &Geo {
-        &self.g
-    }
-
-    fn hit(&self, r: &Ray) -> Option<Flt> {
-        let g = &self.g;
-        let op = g.position - r.origin;
+    fn hit_t(&self, r: &Ray) -> Option<Flt> {
+        let op = self.c - r.origin;
         let b = op.dot(&r.direct);
         let det = b * b - op.len2() + self.r * self.r;
         if det < 0.0 {
@@ -35,5 +31,11 @@ impl Hittable for Sphere {
             return Some(t);
         }
         None
+    }
+
+    fn hit(&self, r: &Ray, t: Flt) -> (&Geo, Vct, Vct) {
+        let pos = r.origin + r.direct * t;
+        let norm = (pos - self.c).norm();
+        return (&self.g, pos, norm);
     }
 }

@@ -53,7 +53,7 @@ impl World {
         let mut t: Flt = 1e30;
         let mut obj = None;
         self.objs.iter().for_each(|o| {
-            if let Some(d) = o.hit(r) {
+            if let Some(d) = o.hit_t(r) {
                 if d < t {
                     t = d;
                     obj = Some(o);
@@ -61,10 +61,7 @@ impl World {
             }
         });
         if let Some(o) = obj {
-            let g = o.get();
-            let pos = r.origin + r.direct * t;
-            let norm = (pos - g.position).norm();
-            return Some((g, pos, norm));
+            return Some(o.hit(r, t));
         }
         None
     }
