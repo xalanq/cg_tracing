@@ -1,4 +1,4 @@
-use crate::{geo::*, ray::*, utils::*};
+use crate::geo::*;
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Plane {
@@ -14,7 +14,7 @@ impl Plane {
 }
 
 impl Hittable for Plane {
-    // calculate intersection point value t, which means r.origin + r.direct * t is that point
+    // calculate t, which means r.origin + r.direct * t is the intersection point
     fn hit_t(&self, r: &Ray) -> Option<Flt> {
         let d = self.n.dot(&r.direct);
         if d.abs() > EPS {

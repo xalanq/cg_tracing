@@ -52,3 +52,10 @@ macro_rules! plane {
         Plane::new($x, $y, $z)
     };
 }
+
+#[macro_export(local_inner_macros)]
+macro_rules! cam {
+    ($x:expr, $y:expr, $z:expr) => {
+        Cam::new($x, $y, $z as utils::Flt)
+    };
+}

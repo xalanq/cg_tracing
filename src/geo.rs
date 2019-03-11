@@ -1,4 +1,8 @@
-use crate::{ray::Ray, vct::Vct, utils::Flt};
+use crate::{
+    ray::Ray,
+    utils::{Flt, EPS},
+    vct::Vct,
+};
 use serde::{Deserialize, Serialize};
 pub mod sphere;
 pub use sphere::Sphere;

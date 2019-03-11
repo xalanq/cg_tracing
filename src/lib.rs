@@ -1,6 +1,7 @@
-pub mod prelude;
+pub mod cam;
 pub mod geo;
 pub mod pic;
+pub mod prelude;
 pub mod ray;
 pub mod utils;
 pub mod vct;

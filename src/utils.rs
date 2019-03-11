@@ -1,4 +1,9 @@
-use crate::prelude::*;
+use crate::{
+    cam::Cam,
+    geo::{Hittable, Plane, Sphere},
+    pic::Pic,
+    world::World,
+};
 pub type Flt = f64;
 pub const PI: Flt = std::f64::consts::PI as Flt;
 pub const EPS: Flt = 1e-4;
@@ -19,8 +24,8 @@ pub fn to_byte(x: Flt) -> u8 {
     (clamp(x).powf(1.0 / 2.2) * 255.0 + 0.5) as u8
 }
 
-use serde_json::Value;
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 
@@ -36,7 +41,7 @@ pub fn from_json(filename: &str, custom: HashMap<String, FromJsonFunc>) -> (Worl
     let w: usize = serde_json::from_value(data["width"].take()).expect("Invalid width");
     let h: usize = serde_json::from_value(data["height"].take()).expect("Invalid height");
     let p = Pic::new(w, h);
-    let cam: Ray = serde_json::from_value(data["camera"].take()).expect("Invalid camera");
+    let camera: Cam = serde_json::from_value(data["camera"].take()).expect("Invalid camera");
     let sample: usize = serde_json::from_value(data["sample"].take()).expect("Invalid sample");
     let max_depth: usize =
         serde_json::from_value(data["max_depth"].take()).expect("Invalid maximum depth");
@@ -44,10 +49,9 @@ pub fn from_json(filename: &str, custom: HashMap<String, FromJsonFunc>) -> (Worl
         serde_json::from_value(data["thread_num"].take()).expect("Invalid thread number");
     let stack_size: usize =
         serde_json::from_value(data["stack_size"].take()).expect("Invalid stack size");
-    let ratio: Flt = serde_json::from_value(data["ratio"].take()).expect("Invalid ratio");
     let na: Flt = serde_json::from_value(data["Na"].take()).expect("Invalid Na");
     let ng: Flt = serde_json::from_value(data["Ng"].take()).expect("Invalid Ng");
-    let mut w = World::new(cam, sample, max_depth, thread_num, stack_size, ratio, na, ng);
+    let mut w = World::new(camera, sample, max_depth, thread_num, stack_size, na, ng);
     match data["objects"].take() {
         Value::Array(objs) => {
             objs.into_iter().for_each(|_obj| {

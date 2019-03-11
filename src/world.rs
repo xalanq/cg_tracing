@@ -1,19 +1,25 @@
-use crate::{geo::*, pic::*, ray::*, utils::*, vct::*};
+use crate::{
+    cam::Cam,
+    geo::{Geo, Hittable, Texture},
+    pic::Pic,
+    ray::Ray,
+    utils::{clamp, Flt, PI},
+    vct::Vct,
+};
 use pbr::ProgressBar;
 use rand::prelude::*;
 use rayon::prelude::*;
 use std::sync::Mutex;
-use std::time::Duration;
 use std::time;
+use std::time::Duration;
 
 pub struct World {
     pub objs: Vec<Box<dyn Hittable>>,
-    pub cam: Ray,
+    pub camera: Cam,
     pub sample: usize,
     pub max_depth: usize,
     pub thread_num: usize,
     pub stack_size: usize,
-    pub ratio: Flt,
     pub n1: Flt,
     pub n2: Flt,
     pub r0: Flt,
@@ -21,23 +27,21 @@ pub struct World {
 
 impl World {
     pub fn new(
-        cam: Ray,
+        camera: Cam,
         sample: usize,
         max_depth: usize,
         thread_num: usize,
         stack_size: usize,
-        ratio: Flt,
         na: Flt,
         ng: Flt,
     ) -> Self {
         Self {
             objs: Vec::new(),
-            cam,
+            camera,
             sample,
             max_depth,
             thread_num,
             stack_size,
-            ratio,
             n1: na / ng,
             n2: ng / na,
             r0: ((na - ng) * (na - ng)) / ((na + ng) * (na + ng)),
@@ -142,8 +146,8 @@ impl World {
     pub fn render(&self, p: &mut Pic) {
         let (w, h) = (p.w, p.h);
         let (fw, fh) = (w as Flt, h as Flt);
-        let cx = Vct::new(fw * self.ratio / fh, 0.0, 0.0);
-        let cy = (cx % self.cam.direct).norm() * self.ratio;
+        let cx = Vct::new(fw * self.camera.ratio / fh, 0.0, 0.0);
+        let cy = (cx % self.camera.direct).norm() * self.camera.ratio;
         let sample = self.sample / 4;
         let inv = 1.0 / sample as Flt;
         let mut pb = ProgressBar::new((w * h) as u64);
@@ -174,8 +178,8 @@ impl World {
                         let (fsx, fsy) = (sx as Flt, sy as Flt);
                         let ccx = cx * (((fsx + 0.5 + Self::gend(&mut rng)) / 2.0 + fx) / fw - 0.5);
                         let ccy = cy * (((fsy + 0.5 + Self::gend(&mut rng)) / 2.0 + fy) / fh - 0.5);
-                        let d = ccx + ccy + self.cam.direct;
-                        let r = Ray::new(self.cam.origin + d * 130.0, d.norm());
+                        let d = ccx + ccy + self.camera.direct;
+                        let r = Ray::new(self.camera.origin + d * 130.0, d.norm());
                         c += self.trace(&r, 0, &mut rng) * inv;
                     }
                     sum += Vct::new(clamp(c.x), clamp(c.y), clamp(c.z)) * 0.25;

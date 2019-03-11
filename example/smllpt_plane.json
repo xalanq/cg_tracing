@@ -5,12 +5,12 @@
     "thread_num": 0,
     "stack_size": 267386880,
     "max_depth": 10,
-    "ratio": 0.5135,
     "Na": 1.0,
     "Ng": 1.5,
     "camera": {
         "origin": { "x": 50.0, "y": 52.0,      "z": 295.6 },
-        "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  }
+        "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  },
+        "ratio": 0.5135
     },
     "objects": [{
         "type": "Plane",

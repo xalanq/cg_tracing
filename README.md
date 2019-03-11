@@ -31,22 +31,21 @@ fn main() {
     let l = vct!(12, 12, 12);
     let (c1, c2) = (vct!(0.75, 0.25, 0.25), vct!(0.25, 0.25, 0.75));
     let (c3, c4) = (vct!(0.75, 0.75, 0.75), vct!(1, 1, 1) * 0.999);
-    let cam = ray!(vct!(50.0, 52.0, 295.6), vct!(0.0, -0.042612, -1.0));
+    let camera = cam!(vct!(50, 52, 295.6), vct!(0, -0.042612, -1), 0.5135);
     let max_depth = 10;
     let thread_num = 0; // if set 0. thread number is the number of CPUs available(logical cores).
     let stack_size = 256 * 1024 * 1024;
-    let ratio = 0.5135;
     let (na, ng) = (1.0, 1.5);
-    World::new(cam, sample, max_depth, thread_num, stack_size, ratio, na, ng)
+    World::new(camera, sample, max_depth, thread_num, stack_size, na, ng)
         .add(sphere!(vct!(1e5 + 1.0, 40.8, 81.6), 1e5, geo!(z, c1, Texture::Diffuse)))
         .add(sphere!(vct!(-1e5 + 99.0, 40.8, 81.6), 1e5, geo!(z, c2, Texture::Diffuse)))
-        .add(sphere!(vct!(50.0, 40.8, 1e5), 1e5, geo!(z, c3, Texture::Diffuse)))
-        .add(sphere!(vct!(50.0, 40.8, -1e5 + 170.0), 1e5, geo!(z, z, Texture::Diffuse)))
-        .add(sphere!(vct!(50.0, 1e5, 81.6), 1e5, geo!(z, c3, Texture::Diffuse)))
-        .add(sphere!(vct!(50.0, -1e5 + 81.6, 81.6), 1e5, geo!(z, c3, Texture::Diffuse)))
-        .add(sphere!(vct!(27.0, 16.5, 47.0), 16.5, geo!(z, c4, Texture::Specular)))
-        .add(sphere!(vct!(73.0, 16.5, 78.0), 16.5, geo!(z, c4, Texture::Refractive)))
-        .add(sphere!(vct!(50.0, 681.33, 81.6), 600, geo!(l, z, Texture::Diffuse)))
+        .add(sphere!(vct!(50, 40.8, 1e5), 1e5, geo!(z, c3, Texture::Diffuse)))
+        .add(sphere!(vct!(50, 40.8, -1e5 + 170.0), 1e5, geo!(z, z, Texture::Diffuse)))
+        .add(sphere!(vct!(50, 1e5, 81.6), 1e5, geo!(z, c3, Texture::Diffuse)))
+        .add(sphere!(vct!(50, -1e5 + 81.6, 81.6), 1e5, geo!(z, c3, Texture::Diffuse)))
+        .add(sphere!(vct!(27, 16.5, 47), 16.5, geo!(z, c4, Texture::Specular)))
+        .add(sphere!(vct!(73, 16.5, 78), 16.5, geo!(z, c4, Texture::Refractive)))
+        .add(sphere!(vct!(50, 681.33, 81.6), 600, geo!(l, z, Texture::Diffuse)))
         .render(&mut p);
     p.save_ppm(&format!("example_{}.ppm", sample));
 }
@@ -76,12 +75,12 @@ fn main() {
     "thread_num": 0,
     "stack_size": 267386880,
     "max_depth": 10,
-    "ratio": 0.5135,
     "Na": 1.0,
     "Ng": 1.5,
     "camera": {
         "origin": { "x": 50.0, "y": 52.0,      "z": 295.6 },
-        "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  }
+        "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  },
+        "ratio": 0.5135
     },
     "objects": [{
         "type": "Plane",
@@ -112,7 +111,11 @@ fn main() {
 see [./src/geo/plane.rs](./src/geo/plane.rs)
 
 ```rust
-use crate::{geo::*, ray::*, utils::*};
+use cg_tracing::geo::{Geo, Hittable};
+use cg_tracing::ray::Ray;
+use cg_tracing::utils::{Flt, EPS};
+use cg_tracing::vct::Vct;
+use serde::{Deserialize, Serialize}
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Plane {
@@ -128,7 +131,7 @@ impl Plane {
 }
 
 impl Hittable for Plane {
-    // calculate intersection point value t, which means r.origin + r.direct * t is that point
+    // calculate t, which means r.origin + r.direct * t is the intersection point
     fn hit_t(&self, r: &Ray) -> Option<Flt> {
         let d = self.n.dot(&r.direct);
         if d.abs() > EPS {

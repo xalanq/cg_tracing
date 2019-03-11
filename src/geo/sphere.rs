@@ -1,4 +1,4 @@
-use crate::{geo::*, ray::*, utils::*};
+use crate::geo::*;
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Sphere {
