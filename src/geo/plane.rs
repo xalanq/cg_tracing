@@ -1,19 +1,26 @@
 use crate::geo::*;
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Plane {
-    pub p: Vct, // any point at plane
-    pub n: Vct, // normal vector of plane
-    pub g: Geo, // geometric info
+    pub p: Vct,     // any point at plane (but it's the left-bottom point of texture image)
+    pub n: Vct,     // normal vector of plane
+    pub t: Texture, // texture info
 }
 
 impl Plane {
-    pub fn new(p: Vct, n: Vct, g: Geo) -> Box<dyn Hittable> {
-        Box::new(Self { p, n, g })
+    pub fn new(p: Vct, n: Vct, t: Texture) -> Box<dyn Geo> {
+        Box::new(Self { p, n, t })
     }
 }
 
-impl Hittable for Plane {
+impl Geo for Plane {
+    // init texture if it is a image
+    fn init(&mut self) {
+        if let Texture::Image(ref mut t) = self.t {
+            t.load();
+        }
+    }
+
     // calculate t, which means r.origin + r.direct * t is the intersection point
     fn hit_t(&self, r: &Ray) -> Option<Flt> {
         let d = self.n.dot(&r.direct);
@@ -27,11 +34,21 @@ impl Hittable for Plane {
     }
 
     // return geo, hit position, normal vector
-    fn hit(&self, r: &Ray, t: Flt) -> (&Geo, Vct, Vct) {
-        (
-            &self.g,
-            r.origin + r.direct * t,
-            if self.n.dot(&r.direct) > 0.0 { self.n } else { -self.n },
-        )
+    fn hit(&self, r: &Ray, t: Flt) -> HitResult {
+        let pos = r.origin + r.direct * t;
+        HitResult {
+            pos,
+            norm: if self.n.dot(&r.direct) > 0.0 { self.n } else { -self.n },
+            texture: match self.t {
+                Texture::Raw(ref tx) => *tx,
+                Texture::Image(ref tx) => {
+                    let v = pos - self.p;
+                    let y = tx.up.dot(&v) / tx.up.len();
+                    let x = tx.right.dot(&v) / tx.right.len();
+                    let col = tx.pic.get(x as usize, y as usize);
+                    TextureRaw { emission: Vct::zero(), color: col, material: tx.material }
+                }
+            },
+        }
     }
 }

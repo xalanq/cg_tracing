@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
+#[derive(Clone, Debug)]
 pub struct Pic {
     pub w: usize,
     pub h: usize,
@@ -17,6 +18,18 @@ impl Pic {
 
     pub fn set(&mut self, x: usize, y: usize, c: &Vct) {
         self.c[y * self.w + x] = *c;
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> Vct {
+        let mut y = y % self.w;
+        let mut x = x % self.h;
+        if y < 0 {
+            y += self.w
+        }
+        if x < 0 {
+            x += self.h
+        }
+        self.c[(self.h - y + 1) * self.w + x]
     }
 
     pub fn save_ppm(&self, filename: &str) {
@@ -36,5 +49,11 @@ impl Pic {
         file.flush().expect(errmsg);
         pb.inc();
         pb.finish_println("Done!");
+    }
+}
+
+impl Default for Pic {
+    fn default() -> Self {
+        Self { w: 0, h: 0, c: Vec::new() }
     }
 }

@@ -1,19 +1,19 @@
 use crate::geo::*;
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sphere {
-    pub c: Vct, // center
-    pub r: Flt, // radius
-    pub g: Geo, // geometric info
+    pub c: Vct,     // center
+    pub r: Flt,     // radius
+    pub t: Texture, // texture info
 }
 
 impl Sphere {
-    pub fn new(c: Vct, r: Flt, g: Geo) -> Box<dyn Hittable> {
-        Box::new(Self { c, r, g })
+    pub fn new(c: Vct, r: Flt, t: Texture) -> Box<dyn Geo> {
+        Box::new(Self { c, r, t })
     }
 }
 
-impl Hittable for Sphere {
+impl Geo for Sphere {
     fn hit_t(&self, r: &Ray) -> Option<Flt> {
         let op = self.c - r.origin;
         let b = op.dot(&r.direct);
@@ -33,9 +33,18 @@ impl Hittable for Sphere {
         None
     }
 
-    fn hit(&self, r: &Ray, t: Flt) -> (&Geo, Vct, Vct) {
+    fn hit(&self, r: &Ray, t: Flt) -> HitResult {
         let pos = r.origin + r.direct * t;
         let norm = (pos - self.c).norm();
-        return (&self.g, pos, norm);
+        HitResult {
+            pos,
+            norm,
+            texture: match self.t {
+                Texture::Raw(ref tx) => *tx,
+                Texture::Image(ref tx) => {
+                    TextureRaw { emission: Vct::zero(), color: Vct::zero(), material: tx.material }
+                }
+            },
+        }
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     cam::Cam,
-    geo::{Geo, Hittable, Texture},
+    geo::{Geo, HitResult, Material},
     pic::Pic,
     ray::Ray,
     utils::{clamp, Flt, PI},
@@ -14,7 +14,7 @@ use std::time;
 use std::time::Duration;
 
 pub struct World {
-    pub objs: Vec<Box<dyn Hittable>>,
+    pub objs: Vec<Box<dyn Geo>>,
     pub camera: Cam,
     pub sample: usize,
     pub max_depth: usize,
@@ -48,12 +48,12 @@ impl World {
         }
     }
 
-    pub fn add(&mut self, obj: Box<dyn Hittable>) -> &mut Self {
+    pub fn add(&mut self, obj: Box<dyn Geo>) -> &mut Self {
         self.objs.push(obj);
         self
     }
 
-    fn find<'a>(&'a self, r: &Ray) -> Option<(&'a Geo, Vct, Vct)> {
+    fn find<'a>(&'a self, r: &Ray) -> Option<HitResult> {
         let mut t: Flt = 1e30;
         let mut obj = None;
         self.objs.iter().for_each(|o| {
@@ -71,23 +71,23 @@ impl World {
     }
 
     fn trace(&self, r: &Ray, mut depth: usize, rng: &mut ThreadRng) -> Vct {
-        if let Some((g, pos, norm)) = self.find(r) {
-            let mut cl = g.color;
+        if let Some(HitResult { pos, norm, ref texture }) = self.find(r) {
+            let mut color = texture.color;
             depth += 1;
             if depth > self.max_depth {
-                return g.emission;
+                return texture.emission;
             }
             if depth > 5 {
-                let p = cl.x.max(cl.y.max(cl.z));
+                let p = color.x.max(color.y.max(color.z));
                 if rng.gen::<Flt>() < p {
-                    cl /= p;
+                    color /= p;
                 } else {
-                    return g.emission;
+                    return texture.emission;
                 }
             }
             let mut ff = || {
                 let nd = norm.dot(&r.direct);
-                if g.texture == Texture::Diffuse {
+                if texture.material == Material::Diffuse {
                     let w = if nd < 0.0 { norm } else { -norm };
                     let (r1, r2) = (PI * 2.0 * rng.gen::<Flt>(), rng.gen::<Flt>());
                     let r2s = r2.sqrt();
@@ -102,7 +102,7 @@ impl World {
                     return self.trace(&Ray::new(pos, d.norm()), depth, rng);
                 }
                 let refl = Ray::new(pos, r.direct - norm * (2.0 * nd));
-                if g.texture == Texture::Specular {
+                if texture.material == Material::Specular {
                     return self.trace(&refl, depth, rng);
                 }
                 let w = if nd < 0.0 { norm } else { -norm };
@@ -129,7 +129,7 @@ impl World {
                     self.trace(&refl, depth, rng) * re + self.trace(&refr, depth, rng) * tr
                 }
             };
-            return g.emission + cl * ff();
+            return texture.emission + color * ff();
         }
         Vct::zero()
     }
@@ -165,7 +165,7 @@ impl World {
 
         println!("w: {}, h: {}, sample: {}, actual sample: {}", w, h, self.sample, sample * 4);
         println!("start render with {} threads.", self.thread_num);
-        let start_time = time::Instant::now();
+        let s_time = time::Instant::now();
 
         data.into_par_iter().for_each(|(x, y)| {
             let mut sum = Vct::zero();
@@ -188,11 +188,12 @@ impl World {
             p.lock().unwrap().set(x, h - y - 1, &sum);
             pb.lock().unwrap().inc();
         });
-
         pb.lock().unwrap().finish_println("Rendering completed\n");
-        println!(
-            "Total cost {:.3} seconds.",
-            (time::Instant::now() - start_time).as_millis() as f64 / 1000.0
-        );
+        let mils = (time::Instant::now() - s_time).as_millis();
+        let days = mils / 1000 / 60 / 60 / 24;
+        let hours = mils / 1000 / 60 / 60 - days * 24;
+        let mins = mils / 1000 / 60 - days * 24 * 60 - hours * 60;
+        let secs = mils / 1000 - days * 24 * 60 * 60 - hours * 60 * 60;
+        println!("Total cost {}d {}h {}m {}s.", days, hours, mins, secs);
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     cam::Cam,
-    geo::{Hittable, Plane, Sphere},
+    geo::{Geo, Plane, Sphere},
     pic::Pic,
     world::World,
 };
@@ -29,10 +29,12 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 
-pub type FromJsonFunc = fn(Value) -> Box<dyn Hittable>;
+pub type FromJsonFunc = fn(Value) -> Box<dyn Geo>;
 
-pub fn new_from_json<T: Hittable + DeserializeOwned + 'static>(v: Value) -> Box<dyn Hittable> {
-    Box::new(serde_json::from_value::<T>(v).expect("Invalid Value"))
+pub fn new_from_json<T: Geo + DeserializeOwned + 'static>(v: Value) -> Box<dyn Geo> {
+    let mut obj = serde_json::from_value::<T>(v).expect("Invalid Value");
+    obj.init();
+    Box::new(obj)
 }
 
 pub fn from_json(filename: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Pic) {
