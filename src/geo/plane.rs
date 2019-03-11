@@ -1,4 +1,4 @@
-use crate::{geo::*, ray::*, utils::EPS, Flt};
+use crate::{geo::*, ray::*, utils::*};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Plane {
@@ -11,14 +11,10 @@ impl Plane {
     pub fn new(p: Vct, n: Vct, g: Geo) -> Box<dyn Hittable> {
         Box::new(Self { p, n, g })
     }
-
-    // just copy that func when you custom your object
-    pub fn from_json(v: Value) -> Box<dyn Hittable> {
-        Box::new(serde_json::from_value::<Self>(v).expect("Invalid Plane"))
-    }
 }
 
 impl Hittable for Plane {
+    // calculate intersection point value t, which means r.origin + r.direct * t is that point
     fn hit_t(&self, r: &Ray) -> Option<Flt> {
         let d = self.n.dot(&r.direct);
         if d.abs() > EPS {

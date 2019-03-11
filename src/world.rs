@@ -1,4 +1,4 @@
-use crate::{geo::*, pic::*, ray::*, utils::clamp, vct::*, Flt, PI};
+use crate::{geo::*, pic::*, ray::*, utils::*, vct::*};
 use pbr::ProgressBar;
 use rand::prelude::*;
 use rayon::prelude::*;

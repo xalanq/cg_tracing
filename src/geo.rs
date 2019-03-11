@@ -1,6 +1,5 @@
-use crate::{ray::Ray, vct::Vct, Flt};
+use crate::{ray::Ray, vct::Vct, utils::Flt};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 pub mod sphere;
 pub use sphere::Sphere;
 pub mod plane;
@@ -29,8 +28,4 @@ impl Geo {
 pub trait Hittable: Send + Sync {
     fn hit_t(&self, r: &Ray) -> Option<Flt>;
     fn hit(&self, r: &Ray, t: Flt) -> (&Geo, Vct, Vct);
-}
-
-pub trait FromJson {
-    fn from_json(v: Value) -> Box<dyn Hittable>;
 }

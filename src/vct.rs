@@ -1,4 +1,4 @@
-use crate::Flt;
+use crate::utils::Flt;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};

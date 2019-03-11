@@ -1,4 +1,4 @@
-use crate::{geo::*, ray::*, utils::EPS, Flt};
+use crate::{geo::*, ray::*, utils::*};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Sphere {
@@ -10,11 +10,6 @@ pub struct Sphere {
 impl Sphere {
     pub fn new(c: Vct, r: Flt, g: Geo) -> Box<dyn Hittable> {
         Box::new(Self { c, r, g })
-    }
-
-    // just copy that func when you custom your object
-    pub fn from_json(v: Value) -> Box<dyn Hittable> {
-        Box::new(serde_json::from_value::<Self>(v).expect("Invalid Sphere"))
     }
 }
 
