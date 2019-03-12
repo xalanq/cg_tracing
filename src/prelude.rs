@@ -1,5 +1,6 @@
 pub use crate::cam::Cam;
 pub use crate::geo::*;
+pub use crate::mat::Mat;
 pub use crate::pic::Pic;
 pub use crate::ray::Ray;
 pub use crate::utils;

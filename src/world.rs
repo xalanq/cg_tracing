@@ -143,7 +143,14 @@ impl World {
         }
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     pub fn render(&self, p: &mut Pic) {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(self.thread_num)
+            .stack_size(self.stack_size)
+            .build()
+            .unwrap();
+        pool.install(|| {
         let (w, h) = (p.w, p.h);
         let (fw, fh) = (w as Flt, h as Flt);
         let cx = Vct::new(fw * self.camera.ratio / fh, 0.0, 0.0);
@@ -157,11 +164,6 @@ impl World {
         data.shuffle(&mut rand::thread_rng());
         let pb = Mutex::new(pb);
         let p = Mutex::new(p);
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(self.thread_num)
-            .stack_size(self.stack_size)
-            .build_global()
-            .unwrap();
 
         println!("w: {}, h: {}, sample: {}, actual sample: {}", w, h, self.sample, sample * 4);
         println!("start render with {} threads.", self.thread_num);
@@ -195,5 +197,6 @@ impl World {
         let mins = mils / 1000 / 60 - days * 24 * 60 - hours * 60;
         let secs = mils / 1000 - days * 24 * 60 * 60 - hours * 60 * 60;
         println!("Total cost {}d {}h {}m {}s.", days, hours, mins, secs);
+        });
     }
 }

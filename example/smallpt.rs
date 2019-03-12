@@ -15,15 +15,15 @@ fn main() {
     let stack_size = 256 * 1024 * 1024;
     let (na, ng) = (1.0, 1.5);
     World::new(camera, sample, max_depth, thread_num, stack_size, na, ng)
-        .add(sphere!(vct!(1e5 + 1.0, 40.8, 81.6), 1e5, geo!(z, c1, Texture::Diffuse)))
-        .add(sphere!(vct!(-1e5 + 99.0, 40.8, 81.6), 1e5, geo!(z, c2, Texture::Diffuse)))
-        .add(sphere!(vct!(50, 40.8, 1e5), 1e5, geo!(z, c3, Texture::Diffuse)))
-        .add(sphere!(vct!(50, 40.8, -1e5 + 170.0), 1e5, geo!(z, z, Texture::Diffuse)))
-        .add(sphere!(vct!(50, 1e5, 81.6), 1e5, geo!(z, c3, Texture::Diffuse)))
-        .add(sphere!(vct!(50, -1e5 + 81.6, 81.6), 1e5, geo!(z, c3, Texture::Diffuse)))
-        .add(sphere!(vct!(27, 16.5, 47), 16.5, geo!(z, c4, Texture::Specular)))
-        .add(sphere!(vct!(73, 16.5, 78), 16.5, geo!(z, c4, Texture::Refractive)))
-        .add(sphere!(vct!(50, 681.33, 81.6), 600, geo!(l, z, Texture::Diffuse)))
+        .add(sphere!(vct!(1e5 + 1.0, 40.8, 81.6), 1e5, sphere_raw!(z, c1, Material::Diffuse)))
+        .add(sphere!(vct!(-1e5 + 99.0, 40.8, 81.6), 1e5, sphere_raw!(z, c2, Material::Diffuse)))
+        .add(sphere!(vct!(50, 40.8, 1e5), 1e5, sphere_raw!(z, c3, Material::Diffuse)))
+        .add(sphere!(vct!(50, 40.8, -1e5 + 170.0), 1e5, sphere_raw!(z, z, Material::Diffuse)))
+        .add(sphere!(vct!(50, 1e5, 81.6), 1e5, sphere_raw!(z, c3, Material::Diffuse)))
+        .add(sphere!(vct!(50, -1e5 + 81.6, 81.6), 1e5, sphere_raw!(z, c3, Material::Diffuse)))
+        .add(sphere!(vct!(27, 16.5, 47), 16.5, sphere_raw!(z, c4, Material::Specular)))
+        .add(sphere!(vct!(73, 16.5, 78), 16.5, sphere_raw!(z, c4, Material::Refractive)))
+        .add(sphere!(vct!(50, 681.33, 81.6), 600, sphere_raw!(l, z, Material::Diffuse)))
         .render(&mut p);
     p.save_ppm(&format!("example_{}.ppm", sample));
 }

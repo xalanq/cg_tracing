@@ -33,13 +33,6 @@ macro_rules! ray {
 }
 
 #[macro_export(local_inner_macros)]
-macro_rules! geo {
-    ($x:expr, $y:expr, $z:expr) => {
-        Geo::new($x, $y, $z)
-    };
-}
-
-#[macro_export(local_inner_macros)]
 macro_rules! sphere {
     ($x:expr, $y:expr, $z:expr) => {
         Sphere::new($x, $y as utils::Flt, $z)
@@ -47,9 +40,23 @@ macro_rules! sphere {
 }
 
 #[macro_export(local_inner_macros)]
+macro_rules! sphere_raw {
+    ($x:expr, $y:expr, $z:expr) => {
+        sphere::Texture::Raw{ raw: TextureRaw::new($x, $y, $z) }
+    };
+}
+
+#[macro_export(local_inner_macros)]
 macro_rules! plane {
     ($x:expr, $y:expr, $z:expr) => {
         Plane::new($x, $y, $z)
+    };
+}
+
+#[macro_export(local_inner_macros)]
+macro_rules! plane_raw {
+    ($x:expr, $y:expr, $z:expr) => {
+        plane::Texture::Raw{ raw: TextureRaw::new($x, $y, $z) }
     };
 }
 

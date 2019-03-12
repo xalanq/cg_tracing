@@ -5,6 +5,7 @@ pub mod prelude;
 pub mod ray;
 pub mod utils;
 pub mod vct;
+pub mod mat;
 pub mod world;
 #[macro_use]
 mod macros;
