@@ -1,7 +1,7 @@
 {
     "width": 1024,
     "height": 768,
-    "sample": 5000,
+    "sample": 25000,
     "thread_num": 0,
     "stack_size": 267386880,
     "max_depth": 10,

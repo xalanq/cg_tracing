@@ -16,7 +16,7 @@ A Rust implement of path tracing and ray tracing in computer graphics.
 
 # Result
 
-## With Textures (sample 5000)
+## With Textures (sample 25000)
 
 See [./result/result_1.json](./result/result_1.json)
 
@@ -36,7 +36,7 @@ use cg_tracing::prelude::*;
 fn main() {
     let (w, mut p) = utils::from_json("smallpt_plane.json", register! {});
     w.render(&mut p);
-    p.save_ppm(&format!("example_{}.ppm", w.sample));
+    p.save_png(&format!("example_{}.png", w.sample));
 }
 ```
 
