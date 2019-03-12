@@ -49,7 +49,7 @@ impl Geo for Plane {
         None
     }
 
-    // return geo, hit position, normal vector
+    // return the hit result
     fn hit(&self, r: &Ray, t: Flt) -> HitResult {
         let pos = r.origin + r.direct * t;
         HitResult {

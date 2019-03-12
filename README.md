@@ -18,6 +18,8 @@ A Rust implement of path tracing and ray tracing in computer graphics.
 
 ## With Textures (sample 5000)
 
+See [./result/result_1.json](./result/result_1.json)
+
 ![](./result/result_1.png)
 
 # Usage
@@ -177,7 +179,7 @@ impl Geo for Plane {
         None
     }
 
-    // return geo, hit position, normal vector
+    // return the hit result
     fn hit(&self, r: &Ray, t: Flt) -> HitResult {
         let pos = r.origin + r.direct * t;
         HitResult {
