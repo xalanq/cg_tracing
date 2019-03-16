@@ -58,8 +58,8 @@ pub fn new_from_json<T: Geo + DeserializeOwned + 'static>(v: Value) -> Box<dyn G
     Box::new(obj)
 }
 
-pub fn from_json(filename: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Image) {
-    let data = fs::read_to_string(filename).expect(&format!("Unable to read {}", filename));
+pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Image) {
+    let data = fs::read_to_string(path).expect(&format!("Unable to read {}", path));
     let mut data: Value = serde_json::from_str(&data).expect("Cannot convert to json");
     let w: usize = serde_json::from_value(data["width"].take()).expect("Invalid width");
     let h: usize = serde_json::from_value(data["height"].take()).expect("Invalid height");
