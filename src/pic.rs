@@ -3,28 +3,22 @@ use image;
 use pbr::ProgressBar;
 use std::fs::File;
 use std::io::Write;
-use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Clone, Debug)]
 pub struct Pic {
     pub w: usize,
     pub h: usize,
-    pub c: Arc<Vec<(u8, u8, u8, u8)>>,
+    pub c: Vec<(u8, u8, u8, u8)>,
 }
 
 impl Pic {
     pub fn new(w: usize, h: usize) -> Self {
-        Self { w, h, c: Arc::new(vec![(0, 0, 0, 0); w * h]) }
+        Self { w, h, c: vec![(0, 0, 0, 0); w * h] }
     }
 
     pub fn set(&mut self, x: usize, y: usize, c: &Vct) {
-        let t = Arc::get_mut(&mut self.c).unwrap();
-        t[y * self.w + x] = (to_byte(c.x), to_byte(c.y), to_byte(c.z), 0);
-    }
-
-    pub fn setc(&mut self, data: Vec<(u8, u8, u8, u8)>) {
-        self.c = Arc::new(data);
+        self.c[y * self.w + x] = (to_byte(c.x), to_byte(c.y), to_byte(c.z), 0);
     }
 
     pub fn get(&self, x: isize, y: isize) -> (u8, u8, u8, u8) {
@@ -80,6 +74,6 @@ impl Pic {
 
 impl Default for Pic {
     fn default() -> Self {
-        Self { w: 0, h: 0, c: Arc::new(Vec::new()) }
+        Self { w: 0, h: 0, c: Vec::new() }
     }
 }

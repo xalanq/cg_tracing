@@ -55,11 +55,10 @@ impl TextureImage {
         let (w, h) = (img.width(), img.height());
         self.pic.w = w as usize;
         self.pic.h = h as usize;
-        let mut tmp = Vec::with_capacity(self.pic.w * self.pic.h);
+        self.pic.c = Vec::with_capacity(self.pic.w * self.pic.h);
         for (_, _, p) in img.pixels() {
-            tmp.push((p.data[0], p.data[1], p.data[2], p.data[3]));
+            self.pic.c.push((p.data[0], p.data[1], p.data[2], p.data[3]));
         }
-        self.pic.setc(tmp);
     }
 }
 
