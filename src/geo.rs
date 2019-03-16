@@ -11,6 +11,8 @@ pub mod sphere;
 pub use sphere::Sphere;
 pub mod plane;
 pub use plane::Plane;
+pub mod mesh;
+pub use mesh::Mesh;
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Material {

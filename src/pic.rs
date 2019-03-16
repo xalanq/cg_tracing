@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Pic {
     pub w: usize,
     pub h: usize,
@@ -69,11 +69,5 @@ impl Pic {
         imgbuf.save(&filename).expect(&format!("cannot save PNG to {}", filename));
         pb.inc();
         pb.finish_println("Done!\n");
-    }
-}
-
-impl Default for Pic {
-    fn default() -> Self {
-        Self { w: 0, h: 0, c: Vec::new() }
     }
 }

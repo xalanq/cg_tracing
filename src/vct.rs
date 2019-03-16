@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::ops::{Div, DivAssign, Mul, MulAssign};
 use std::ops::{Neg, Rem};
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct Vct {
     pub x: Flt,
     pub y: Flt,
