@@ -1,68 +1,17 @@
 use crate::{
     mat::Mat,
-    pic::Pic,
     ray::Ray,
+    texture::*,
     utils::{Flt, EPS},
     vct::Vct,
 };
 use serde::{Deserialize, Serialize};
-use std::default::Default;
 pub mod sphere;
 pub use sphere::Sphere;
 pub mod plane;
 pub use plane::Plane;
 pub mod mesh;
 pub use mesh::Mesh;
-
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub enum Material {
-    Diffuse,
-    Specular,
-    Refractive,
-}
-
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct TextureRaw {
-    pub emission: Vct,
-    pub color: Vct,
-    pub material: Material,
-}
-
-impl TextureRaw {
-    pub fn new(emission: Vct, color: Vct, material: Material) -> Self {
-        Self { emission, color, material }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TextureImage {
-    pub filename: String,
-    pub material: Material,
-
-    #[serde(skip_serializing, skip_deserializing)]
-    pub pic: Pic,
-}
-
-impl TextureImage {
-    pub fn new(filename: String, material: Material) -> Self {
-        Self { filename, material, pic: Pic::default() }
-    }
-}
-
-use image::GenericImageView;
-
-impl TextureImage {
-    pub fn load(&mut self) {
-        let img = image::open(&self.filename).expect(&format!("Cannot open {}", self.filename));
-        let (w, h) = (img.width(), img.height());
-        self.pic.w = w as usize;
-        self.pic.h = h as usize;
-        self.pic.c = Vec::with_capacity(self.pic.w * self.pic.h);
-        for (_, _, p) in img.pixels() {
-            self.pic.c.push((p.data[0], p.data[1], p.data[2], p.data[3]));
-        }
-    }
-}
 
 #[derive(Copy, Clone, Debug)]
 pub struct HitResult {
@@ -71,8 +20,39 @@ pub struct HitResult {
     pub texture: TextureRaw,
 }
 
-pub trait Geo: Send + Sync {
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub struct Coord {
+    pub p: Vct,
+    pub x: Vct,
+    pub y: Vct,
+    pub z: Vct,
+}
+
+impl Coord {
+    pub fn new(p: Vct, x: Vct, y: Vct, z: Vct) -> Self {
+        Self { p, x, y, z }
+    }
+
+    pub fn norm(&mut self) {
+        self.x = self.x.norm();
+        self.y = self.y.norm();
+        self.z = self.z.norm();
+        assert!(self.x.dot(self.y).abs() < EPS);
+        assert!(self.x.dot(self.z).abs() < EPS);
+        assert!(self.y.dot(self.z).abs() < EPS);
+    }
+
+    pub fn to_world(&self, p: Vct) -> Vct {
+        Mat::object_to_world(self.x, self.y, self.z, p) + self.p
+    }
+
+    pub fn to_object(&self, p: Vct) -> Vct {
+        Mat::world_to_object(self.x, self.y, self.z, p - self.p)
+    }
+}
+
+pub trait Geo<Tmp = ()>: Send + Sync {
     fn init(&mut self) {} // use it in from_json
-    fn hit_t(&self, r: &Ray) -> Option<Flt>;
-    fn hit(&self, r: &Ray, t: Flt) -> HitResult;
+    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<Tmp>)>;
+    fn hit(&self, r: &Ray, tmp: (Flt, Option<Tmp>)) -> HitResult;
 }

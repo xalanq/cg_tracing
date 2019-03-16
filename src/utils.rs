@@ -1,7 +1,7 @@
 use crate::{
-    cam::Cam,
+    camera::Camera,
     geo::{Geo, Plane, Sphere},
-    pic::Pic,
+    image::Image,
     world::World,
 };
 pub type Flt = f64;
@@ -58,13 +58,13 @@ pub fn new_from_json<T: Geo + DeserializeOwned + 'static>(v: Value) -> Box<dyn G
     Box::new(obj)
 }
 
-pub fn from_json(filename: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Pic) {
+pub fn from_json(filename: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Image) {
     let data = fs::read_to_string(filename).expect(&format!("Unable to read {}", filename));
     let mut data: Value = serde_json::from_str(&data).expect("Cannot convert to json");
     let w: usize = serde_json::from_value(data["width"].take()).expect("Invalid width");
     let h: usize = serde_json::from_value(data["height"].take()).expect("Invalid height");
-    let p = Pic::new(w, h);
-    let camera: Cam = serde_json::from_value(data["camera"].take()).expect("Invalid camera");
+    let p = Image::new(w, h);
+    let camera: Camera = serde_json::from_value(data["camera"].take()).expect("Invalid camera");
     let sample: usize = serde_json::from_value(data["sample"].take()).expect("Invalid sample");
     let max_depth: usize =
         serde_json::from_value(data["max_depth"].take()).expect("Invalid maximum depth");

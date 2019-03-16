@@ -1,7 +1,7 @@
-pub use crate::cam::Cam;
+pub use crate::camera::Camera;
 pub use crate::geo::*;
+pub use crate::image::Image;
 pub use crate::mat::Mat;
-pub use crate::pic::Pic;
 pub use crate::ray::Ray;
 pub use crate::utils;
 pub use crate::vct::Vct;

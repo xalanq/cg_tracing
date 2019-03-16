@@ -1,8 +1,9 @@
 use crate::{
-    cam::Cam,
-    geo::{Geo, HitResult, Material},
-    pic::Pic,
+    camera::Camera,
+    geo::{Geo, HitResult},
+    image::Image,
     ray::Ray,
+    texture::Material,
     utils::{clamp, Flt, Rng, PI},
     vct::Vct,
 };
@@ -15,7 +16,7 @@ use std::time::Duration;
 
 pub struct World {
     pub objs: Vec<Box<dyn Geo>>,
-    pub camera: Cam,
+    pub camera: Camera,
     pub sample: usize,
     pub max_depth: usize,
     pub thread_num: usize,
@@ -27,7 +28,7 @@ pub struct World {
 
 impl World {
     pub fn new(
-        camera: Cam,
+        camera: Camera,
         sample: usize,
         max_depth: usize,
         thread_num: usize,
@@ -56,16 +57,18 @@ impl World {
     fn find<'a>(&'a self, r: &Ray) -> Option<HitResult> {
         let mut t: Flt = 1e30;
         let mut obj = None;
+        let mut gg = None;
         self.objs.iter().for_each(|o| {
             if let Some(d) = o.hit_t(r) {
-                if d < t {
-                    t = d;
+                if d.0 < t {
+                    t = d.0;
+                    gg = d.1;
                     obj = Some(o);
                 }
             }
         });
         if let Some(o) = obj {
-            return Some(o.hit(r, t));
+            return Some(o.hit(r, (t, gg)));
         }
         None
     }
@@ -86,7 +89,7 @@ impl World {
                 }
             }
             let mut ff = || {
-                let nd = norm.dot(&r.direct);
+                let nd = norm.dot(r.direct);
                 if texture.material == Material::Diffuse {
                     let w = if nd < 0.0 { norm } else { -norm };
                     let (r1, r2) = (PI * 2.0 * rng.gen(), rng.gen());
@@ -106,7 +109,7 @@ impl World {
                     return self.trace(&refl, depth, rng);
                 }
                 let w = if nd < 0.0 { norm } else { -norm };
-                let (it, ddw) = (norm.dot(&w) > 0.0, r.direct.dot(&w));
+                let (it, ddw) = (norm.dot(w) > 0.0, r.direct.dot(w));
                 let (n, sign) = if it { (self.n1, 1.0) } else { (self.n2, -1.0) };
                 let cos2t = 1.0 - n * n * (1.0 - ddw * ddw);
                 if cos2t < 0.0 {
@@ -114,7 +117,7 @@ impl World {
                 }
                 let td = (r.direct * n - norm * ((ddw * n + cos2t.sqrt()) * sign)).norm();
                 let refr = Ray::new(pos, td);
-                let c = if it { 1.0 + ddw } else { 1.0 - td.dot(&norm) };
+                let c = if it { 1.0 + ddw } else { 1.0 - td.dot(norm) };
                 let cc = c * c;
                 let re = self.r0 + (1.0 - self.r0) * cc * cc * c;
                 let tr = 1.0 - re;
@@ -144,7 +147,7 @@ impl World {
     }
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn render(&self, p: &mut Pic) {
+    pub fn render(&self, p: &mut Image) {
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(self.thread_num)
             .stack_size(self.stack_size)
@@ -187,7 +190,7 @@ impl World {
                     sum += Vct::new(clamp(c.x), clamp(c.y), clamp(c.z)) * 0.25;
                 }
             }
-            p.lock().unwrap().set(x, h - y - 1, &sum);
+            p.lock().unwrap().set(x, h - y - 1, sum);
             pb.lock().unwrap().inc();
         });
         pb.lock().unwrap().finish_println("Rendering completed\n");
@@ -195,7 +198,7 @@ impl World {
         let days = mils / 1000 / 60 / 60 / 24;
         let hours = mils / 1000 / 60 / 60 - days * 24;
         let mins = mils / 1000 / 60 - days * 24 * 60 - hours * 60;
-        let secs = mils / 1000 - days * 24 * 60 * 60 - hours * 60 * 60;
+        let secs = mils / 1000 - days * 24 * 60 * 60 - hours * 60 * 60 - mins * 60;
         println!("Total cost {}d {}h {}m {}s.", days, hours, mins, secs);
         });
     }

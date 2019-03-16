@@ -25,12 +25,12 @@ impl Vct {
         Self { x, y, z }
     }
 
-    pub fn dot(&self, rhs: &Self) -> Flt {
+    pub fn dot(&self, rhs: Self) -> Flt {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
     pub fn len2(&self) -> Flt {
-        self.dot(self)
+        self.dot(*self)
     }
 
     pub fn len(&self) -> Flt {
@@ -39,6 +39,14 @@ impl Vct {
 
     pub fn norm(&self) -> Self {
         *self / self.len()
+    }
+
+    pub fn min(&self, rhs: Self) -> Self {
+        Self { x: self.x.min(rhs.x), y: self.y.min(rhs.y), z: self.z.min(rhs.z) }
+    }
+
+    pub fn max(&self, rhs: Self) -> Self {
+        Self { x: self.x.max(rhs.x), y: self.y.max(rhs.y), z: self.z.max(rhs.z) }
     }
 }
 

@@ -16,9 +16,20 @@ impl Mat {
     #[cfg_attr(rustfmt, rustfmt_skip)]
     pub fn world_to_object(x: Vct, y: Vct, z: Vct, p: Vct) -> Vct {
         let m = Self {
-            m00: x.x, m10: y.x, m20: z.x,
-            m01: x.y, m11: y.y, m21: z.y,
-            m02: x.z, m12: y.z, m22: z.z,
+            m00: x.x, m01: x.y, m02: x.z,
+            m10: y.x, m11: y.y, m12: y.z,
+            m20: z.x, m21: z.y, m22: z.z,
+            m33: 1.0, ..Default::default()
+        };
+        m * p
+    }
+
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn object_to_world(x: Vct, y: Vct, z: Vct, p: Vct) -> Vct {
+        let m = Self {
+            m00: x.x, m01: x.y, m02: x.z,
+            m10: y.x, m11: y.y, m12: y.z,
+            m20: z.x, m21: z.y, m22: z.z,
             m33: 1.0, ..Default::default()
         };
         m * p
