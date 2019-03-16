@@ -24,6 +24,27 @@ pub fn to_byte(x: Flt) -> u8 {
     (clamp(x).powf(1.0 / 2.2) * 255.0 + 0.5) as u8
 }
 
+pub struct Rng {
+    pub seed: u32,
+}
+
+const INV32: Flt = 1.0 / std::u32::MAX as Flt;
+
+impl Rng {
+    pub fn new(seed: u32) -> Self {
+        Self { seed: if seed == 0 { 233 } else { seed } }
+    }
+
+    pub fn gen(&mut self) -> Flt {
+        let mut x = self.seed;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.seed = x;
+        x as Flt * INV32
+    }
+}
+
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::collections::HashMap;

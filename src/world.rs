@@ -3,7 +3,7 @@ use crate::{
     geo::{Geo, HitResult, Material},
     pic::Pic,
     ray::Ray,
-    utils::{clamp, Flt, PI},
+    utils::{clamp, Flt, Rng, PI},
     vct::Vct,
 };
 use pbr::ProgressBar;
@@ -70,7 +70,7 @@ impl World {
         None
     }
 
-    fn trace(&self, r: &Ray, mut depth: usize, rng: &mut ThreadRng) -> Vct {
+    fn trace(&self, r: &Ray, mut depth: usize, rng: &mut Rng) -> Vct {
         if let Some(HitResult { pos, norm, ref texture }) = self.find(r) {
             let mut color = texture.color;
             depth += 1;
@@ -79,7 +79,7 @@ impl World {
             }
             if depth > 5 {
                 let p = color.x.max(color.y.max(color.z));
-                if rng.gen::<Flt>() < p {
+                if rng.gen() < p {
                     color /= p;
                 } else {
                     return texture.emission;
@@ -89,7 +89,7 @@ impl World {
                 let nd = norm.dot(&r.direct);
                 if texture.material == Material::Diffuse {
                     let w = if nd < 0.0 { norm } else { -norm };
-                    let (r1, r2) = (PI * 2.0 * rng.gen::<Flt>(), rng.gen::<Flt>());
+                    let (r1, r2) = (PI * 2.0 * rng.gen(), rng.gen());
                     let r2s = r2.sqrt();
                     let u = (if w.x.abs() <= 0.1 {
                         Vct::new(1.0, 0.0, 0.0)
@@ -120,7 +120,7 @@ impl World {
                 let tr = 1.0 - re;
                 if depth > 2 {
                     let p = 0.25 + 0.5 * re;
-                    if rng.gen::<Flt>() < p {
+                    if rng.gen() < p {
                         self.trace(&refl, depth, rng) * (re / p)
                     } else {
                         self.trace(&refr, depth, rng) * (tr / (1.0 - p))
@@ -134,8 +134,8 @@ impl World {
         Vct::zero()
     }
 
-    fn gend(rng: &mut ThreadRng) -> Flt {
-        let r = 2.0 * rng.gen::<Flt>();
+    fn gend(rng: &mut Rng) -> Flt {
+        let r = 2.0 * rng.gen();
         if r < 1.0 {
             r.sqrt() - 1.0
         } else {
@@ -172,10 +172,10 @@ impl World {
         data.into_par_iter().for_each(|(x, y)| {
             let mut sum = Vct::zero();
             let (fx, fy) = (x as Flt, y as Flt);
+            let mut rng = Rng::new((y * w + x) as u32);
             for sx in 0..2 {
                 for sy in 0..2 {
                     let mut c = Vct::zero();
-                    let mut rng = rand::thread_rng();
                     for _ in 0..sample {
                         let (fsx, fsy) = (sx as Flt, sy as Flt);
                         let ccx = cx * (((fsx + 0.5 + Self::gend(&mut rng)) / 2.0 + fx) / fw - 0.5);
