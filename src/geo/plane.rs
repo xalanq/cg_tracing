@@ -24,7 +24,7 @@ impl Geo for Plane {
     }
 
     // calculate t, which means r.origin + r.direct * t is the intersection point
-    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<()>)> {
+    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<(usize, Flt, Flt)>)> {
         let d = self.coord.z.dot(r.direct);
         if d.abs() > EPS {
             let t = self.coord.z.dot(self.coord.p - r.origin) / d;
@@ -36,7 +36,7 @@ impl Geo for Plane {
     }
 
     // return the hit result
-    fn hit(&self, r: &Ray, tmp: (Flt, Option<()>)) -> HitResult {
+    fn hit(&self, r: &Ray, tmp: (Flt, Option<(usize, Flt, Flt)>)) -> HitResult {
         let pos = r.origin + r.direct * tmp.0;
         let n = self.coord.z;
         HitResult {

@@ -42,17 +42,17 @@ impl Coord {
         assert!(self.y.dot(self.z).abs() < EPS);
     }
 
-    pub fn to_world(&self, p: Vct) -> Vct {
-        Mat::object_to_world(self.x, self.y, self.z, p) + self.p
-    }
-
     pub fn to_object(&self, p: Vct) -> Vct {
         Mat::world_to_object(self.x, self.y, self.z, p - self.p)
     }
+
+    pub fn to_world(&self, p: Vct) -> Vct {
+        Mat::object_to_world(self.x, self.y, self.z, p) + self.p
+    }
 }
 
-pub trait Geo<Tmp = ()>: Send + Sync {
+pub trait Geo: Send + Sync {
     fn init(&mut self) {} // use it in from_json
-    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<Tmp>)>;
-    fn hit(&self, r: &Ray, tmp: (Flt, Option<Tmp>)) -> HitResult;
+    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<(usize, Flt, Flt)>)>;
+    fn hit(&self, r: &Ray, tmp: (Flt, Option<(usize, Flt, Flt)>)) -> HitResult;
 }

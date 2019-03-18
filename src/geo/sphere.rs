@@ -23,7 +23,7 @@ impl Geo for Sphere {
         }
     }
 
-    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<()>)> {
+    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<(usize, Flt, Flt)>)> {
         let op = self.coord.p - r.origin;
         let b = op.dot(r.direct);
         let det = b * b - op.len2() + self.radius * self.radius;
@@ -42,12 +42,11 @@ impl Geo for Sphere {
         None
     }
 
-    fn hit(&self, r: &Ray, t: (Flt, Option<()>)) -> HitResult {
-        let pos = r.origin + r.direct * t.0;
-        let norm = (pos - self.coord.p).norm();
+    fn hit(&self, r: &Ray, tmp: (Flt, Option<(usize, Flt, Flt)>)) -> HitResult {
+        let pos = r.origin + r.direct * tmp.0;
         HitResult {
             pos,
-            norm,
+            norm: (pos - self.coord.p).norm(),
             texture: match self.texture {
                 Texture::Raw(ref raw) => *raw,
                 Texture::Image(ref img) => {

@@ -4,7 +4,7 @@ use std::default::Default;
 use std::ops::Mul;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Default, Copy, Clone)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Mat {
     pub m00: Flt, pub m01: Flt, pub m02: Flt, pub m03: Flt,
     pub m10: Flt, pub m11: Flt, pub m12: Flt, pub m13: Flt,

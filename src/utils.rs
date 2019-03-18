@@ -1,9 +1,10 @@
 use crate::{
     camera::Camera,
-    geo::{Geo, Plane, Sphere},
+    geo::{Geo, Mesh, Plane, Sphere},
     image::Image,
     world::World,
 };
+use std::thread;
 pub type Flt = f64;
 pub const PI: Flt = std::f64::consts::PI as Flt;
 pub const EPS: Flt = 1e-4;
@@ -45,6 +46,7 @@ impl Rng {
     }
 }
 
+use pbr::ProgressBar;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -76,26 +78,36 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
     let ng: Flt = serde_json::from_value(data["Ng"].take()).expect("Invalid Ng");
     let mut w = World::new(camera, sample, max_depth, thread_num, stack_size, na, ng);
     match data["objects"].take() {
-        Value::Array(objs) => {
-            objs.into_iter().for_each(|_obj| {
-                let mut obj = _obj;
-                match obj["type"].take() {
-                    Value::String(tp) => match tp.as_ref() {
-                        "Sphere" => w.add(new_from_json::<Sphere>(obj)),
-                        "Plane" => w.add(new_from_json::<Plane>(obj)),
-                        _ => {
-                            if let Some(f) = custom.get(&tp) {
-                                w.add(f(obj));
-                                return;
+        Value::Array(objs) => thread::Builder::new()
+            .stack_size(stack_size)
+            .spawn(move || {
+                println!("Loading objects...");
+                let mut pb = ProgressBar::new(objs.len() as u64);
+                objs.into_iter().for_each(|_obj| {
+                    let mut obj = _obj;
+                    match obj["type"].take() {
+                        Value::String(tp) => match tp.as_ref() {
+                            "Sphere" => w.add(new_from_json::<Sphere>(obj)),
+                            "Plane" => w.add(new_from_json::<Plane>(obj)),
+                            "Mesh" => w.add(new_from_json::<Mesh>(obj)),
+                            _ => {
+                                if let Some(f) = custom.get(&tp) {
+                                    w.add(f(obj));
+                                    return;
+                                }
+                                panic!("Unknown obj");
                             }
-                            panic!("Unknown obj");
-                        }
-                    },
-                    _ => panic!("Invalid obj"),
-                };
-            });
-            (w, p)
-        }
+                        },
+                        _ => panic!("Invalid obj"),
+                    };
+                    pb.inc();
+                });
+                pb.finish_println("Loaded.\n");
+                (w, p)
+            })
+            .unwrap()
+            .join()
+            .unwrap(),
         _ => panic!("objs is not an array"),
     }
 }

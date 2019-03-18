@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::ops::{Div, DivAssign, Mul, MulAssign};
-use std::ops::{Neg, Rem};
+use std::ops::{Index, Neg, Rem};
 
 #[derive(Copy, Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct Vct {
@@ -203,6 +203,19 @@ impl Rem<Vct> for Vct {
             self.z * rhs.x - self.x * rhs.z,
             self.x * rhs.y - self.y * rhs.x,
         )
+    }
+}
+
+/* Index */
+impl Index<usize> for Vct {
+    type Output = Flt;
+    fn index(&self, idx: usize) -> &Flt {
+        match idx {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("invalid index"),
+        }
     }
 }
 
