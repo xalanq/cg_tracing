@@ -90,9 +90,9 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
                     let mut obj = _obj;
                     match obj["type"].take() {
                         Value::String(tp) => match tp.as_ref() {
-                            "Sphere" => w.add(new_from_json::<Sphere>(obj)),
-                            "Plane" => w.add(new_from_json::<Plane>(obj)),
-                            "Mesh" => w.add(new_from_json::<Mesh>(obj)),
+                            "sphere" => w.add(new_from_json::<Sphere>(obj)),
+                            "plane" => w.add(new_from_json::<Plane>(obj)),
+                            "mesh" => w.add(new_from_json::<Mesh>(obj)),
                             _ => {
                                 if let Some(f) = custom.get(&tp) {
                                     w.add(f(obj));

@@ -1,6 +1,7 @@
 use crate::{linalg::Vct, utils::Image, Deserialize, Flt, Serialize};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Material {
     Diffuse,
     Specular,
@@ -25,7 +26,7 @@ pub struct TextureImage {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum Texture {
     Raw(TextureRaw),
     Image(TextureImage),
