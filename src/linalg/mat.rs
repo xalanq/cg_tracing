@@ -13,6 +13,12 @@ use std::ops::{Mul, Rem};
 z
 */
 
+macro_rules! df {
+    () => {
+        Default::default()
+    };
+}
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Mat {
@@ -23,60 +29,36 @@ pub struct Mat {
 }
 
 impl Mat {
-    pub fn scale(x: Flt, y: Flt, z: Flt) -> Mat {
-        Mat { m00: x, m11: y, m22: z, m33: 1.0, ..Default::default() }
+    pub fn identity() -> Self {
+        Self { m00: 1.0, m11: 1.0, m22: 1.0, m33: 1.0, ..df!() }
     }
 
-    pub fn shift(x: Flt, y: Flt, z: Flt) -> Mat {
-        Mat { m00: 1.0, m11: 1.0, m22: 1.0, m33: 1.0, m03: x, m13: y, m23: z, ..Default::default() }
+    pub fn scale(x: Flt, y: Flt, z: Flt) -> Self {
+        Self { m00: x, m11: y, m22: z, m33: 1.0, ..df!() }
     }
 
-    pub fn rot_x(radian: Flt) -> Mat {
+    pub fn shift(x: Flt, y: Flt, z: Flt) -> Self {
+        Self { m00: 1.0, m11: 1.0, m22: 1.0, m33: 1.0, m03: x, m13: y, m23: z, ..df!() }
+    }
+
+    pub fn rot(axis: &str, radian: Flt) -> Self {
         let (sin, cos) = (radian.sin(), radian.cos());
-        Mat { m00: 1.0, m11: cos, m12: -sin, m21: sin, m22: cos, m33: 1.0, ..Default::default() }
+        match axis {
+            "x" => Self { m00: 1.0, m11: cos, m12: -sin, m21: sin, m22: cos, m33: 1.0, ..df!() },
+            "y" => Self { m00: cos, m02: sin, m11: 1.0, m20: -sin, m22: cos, m33: 1.0, ..df!() },
+            "z" => Self { m00: cos, m01: -sin, m10: sin, m11: cos, m22: 1.0, m33: 1.0, ..df!() },
+            _ => panic!("Invalid axis"),
+        }
     }
 
-    pub fn rot_x_deg(deg: Flt) -> Mat {
-        Mat::rot_x(deg.to_radians())
-    }
-
-    pub fn rot_y(radian: Flt) -> Mat {
-        let (sin, cos) = (radian.sin(), radian.cos());
-        Mat { m00: cos, m02: sin, m11: 1.0, m20: -sin, m22: cos, m33: 1.0, ..Default::default() }
-    }
-
-    pub fn rot_y_deg(deg: Flt) -> Mat {
-        Mat::rot_y(deg.to_radians())
-    }
-
-    pub fn rot_z(radian: Flt) -> Mat {
-        let (sin, cos) = (radian.sin(), radian.cos());
-        Mat { m00: cos, m01: -sin, m10: sin, m11: cos, m22: 1.0, m33: 1.0, ..Default::default() }
-    }
-
-    pub fn rot_z_deg(deg: Flt) -> Mat {
-        Mat::rot_z(deg.to_radians())
-    }
-
-    pub fn to_vec(&self) -> Vct {
-        Vct::new(self.m03, self.m13, self.m23)
-    }
-
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn world_to_object(x: Vct, y: Vct, z: Vct, p: Vct) -> Vct {
-        let m = Self {
-            m00: x.x, m10: y.x, m20: z.x,
-            m01: x.y, m11: y.y, m21: z.y,
-            m02: x.z, m12: y.z, m22: z.z,
-            m33: 1.0, ..Default::default()
-        };
-        m * p
+    pub fn rot_degree(axis: &str, degree: Flt) -> Self {
+        Self::rot(axis, degree.to_radians())
     }
 }
 
 impl Mul<Mat> for Mat {
-    type Output = Mat;
-    fn mul(self, rhs: Mat) -> Mat {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
         Mat {
             m00: self.m00 * rhs.m00 + self.m01 * rhs.m10 + self.m02 * rhs.m20 + self.m03 * rhs.m30,
             m01: self.m00 * rhs.m01 + self.m01 * rhs.m11 + self.m02 * rhs.m21 + self.m03 * rhs.m31,

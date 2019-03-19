@@ -64,7 +64,7 @@
         },
         "texture": {
             "type": "image",
-            "path": "./result/back.jpg",
+            "path": "./assets/back.jpg",
             "material": "diffuse",
             "width_ratio": 0.065,
             "height_ratio": 0.065
@@ -79,7 +79,7 @@
         },
         "texture": {
             "type": "image",
-            "path": "./result/front.jpg",
+            "path": "./assets/front.jpg",
             "material": "diffuse",
             "width_ratio": 0.065,
             "height_ratio": 0.065
@@ -139,7 +139,7 @@
         "radius": 10.0,
         "texture": {
             "type": "image",
-            "path": "./result/logo.jpg",
+            "path": "./assets/logo.jpg",
             "material": "diffuse",
             "width_ratio": 1.0,
             "height_ratio": 1.0
@@ -155,7 +155,7 @@
         "radius": 10.0,
         "texture": {
             "type": "image",
-            "path": "./result/logo.png",
+            "path": "./assets/logo.png",
             "material": "refractive",
             "width_ratio": 1.0,
             "height_ratio": 1.0
@@ -171,7 +171,7 @@
         "radius": 10.0,
         "texture": {
             "type": "image",
-            "path": "./result/logo.png",
+            "path": "./assets/logo.png",
             "material": "specular",
             "width_ratio": 1.0,
             "height_ratio": 1.0

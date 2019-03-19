@@ -69,21 +69,21 @@ impl fmt::Display for Vct {
 /* Add */
 
 impl Add<Vct> for Vct {
-    type Output = Vct;
-    fn add(self, rhs: Vct) -> Vct {
-        Vct::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
     }
 }
 
 impl Add<Flt> for Vct {
-    type Output = Vct;
-    fn add(self, rhs: Flt) -> Vct {
-        Vct::new(self.x + rhs, self.y + rhs, self.z + rhs)
+    type Output = Self;
+    fn add(self, rhs: Flt) -> Self {
+        Self::new(self.x + rhs, self.y + rhs, self.z + rhs)
     }
 }
 
 impl AddAssign<Vct> for Vct {
-    fn add_assign(&mut self, rhs: Vct) {
+    fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
         self.z += rhs.z;
@@ -101,21 +101,21 @@ impl AddAssign<Flt> for Vct {
 /* Sub */
 
 impl Sub<Vct> for Vct {
-    type Output = Vct;
-    fn sub(self, rhs: Vct) -> Vct {
-        Vct::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
 
 impl Sub<Flt> for Vct {
-    type Output = Vct;
-    fn sub(self, rhs: Flt) -> Vct {
-        Vct::new(self.x - rhs, self.y - rhs, self.z - rhs)
+    type Output = Self;
+    fn sub(self, rhs: Flt) -> Self {
+        Self::new(self.x - rhs, self.y - rhs, self.z - rhs)
     }
 }
 
 impl SubAssign<Vct> for Vct {
-    fn sub_assign(&mut self, rhs: Vct) {
+    fn sub_assign(&mut self, rhs: Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
         self.z -= rhs.z;
@@ -133,21 +133,21 @@ impl SubAssign<Flt> for Vct {
 /* Mul */
 
 impl Mul<Vct> for Vct {
-    type Output = Vct;
-    fn mul(self, rhs: Vct) -> Vct {
-        Vct::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        Self::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
     }
 }
 
 impl Mul<Flt> for Vct {
-    type Output = Vct;
-    fn mul(self, rhs: Flt) -> Vct {
-        Vct::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    type Output = Self;
+    fn mul(self, rhs: Flt) -> Self {
+        Self::new(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 
 impl MulAssign<Vct> for Vct {
-    fn mul_assign(&mut self, rhs: Vct) {
+    fn mul_assign(&mut self, rhs: Self) {
         self.x *= rhs.x;
         self.y *= rhs.y;
         self.z *= rhs.z;
@@ -165,21 +165,21 @@ impl MulAssign<Flt> for Vct {
 /* Div */
 
 impl Div<Vct> for Vct {
-    type Output = Vct;
-    fn div(self, rhs: Vct) -> Vct {
-        Vct::new(self.x / rhs.x, self.y / rhs.y, self.z / rhs.z)
+    type Output = Self;
+    fn div(self, rhs: Self) -> Self {
+        Self::new(self.x / rhs.x, self.y / rhs.y, self.z / rhs.z)
     }
 }
 
 impl Div<Flt> for Vct {
-    type Output = Vct;
-    fn div(self, rhs: Flt) -> Vct {
-        Vct::new(self.x / rhs, self.y / rhs, self.z / rhs)
+    type Output = Self;
+    fn div(self, rhs: Flt) -> Self {
+        Self::new(self.x / rhs, self.y / rhs, self.z / rhs)
     }
 }
 
 impl DivAssign<Vct> for Vct {
-    fn div_assign(&mut self, rhs: Vct) {
+    fn div_assign(&mut self, rhs: Self) {
         self.x /= rhs.x;
         self.y /= rhs.y;
         self.z /= rhs.z;
@@ -197,18 +197,18 @@ impl DivAssign<Flt> for Vct {
 /* Neg */
 
 impl Neg for Vct {
-    type Output = Vct;
-    fn neg(self) -> Vct {
-        Vct::new(-self.x, -self.y, -self.z)
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self::new(-self.x, -self.y, -self.z)
     }
 }
 
 /* Cross(Rem) */
 
 impl Rem<Vct> for Vct {
-    type Output = Vct;
-    fn rem(self, rhs: Vct) -> Vct {
-        Vct::new(
+    type Output = Self;
+    fn rem(self, rhs: Self) -> Self {
+        Self::new(
             self.y * rhs.z - self.z * rhs.y,
             self.z * rhs.x - self.x * rhs.z,
             self.x * rhs.y - self.y * rhs.x,

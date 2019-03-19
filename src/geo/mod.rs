@@ -1,8 +1,6 @@
 pub mod collection;
-pub mod coord;
 pub mod texture;
 
-pub use coord::Coord;
 pub use texture::{Material, Texture, TextureImage, TextureRaw};
 
 use crate::{

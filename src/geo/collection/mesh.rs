@@ -1,6 +1,6 @@
 use crate::{
-    geo::{Coord, Geo, HitResult, HitTemp, TextureRaw},
-    linalg::{Mat, Ray, Vct},
+    geo::{Geo, HitResult, HitTemp, TextureRaw},
+    linalg::{Mat, Ray, Transform, Vct},
     Deserialize, Flt, Serialize, EPS,
 };
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Mesh {
-    pub coord: Coord,
+    pub transform: Transform,
     pub path: String,
     pub texture: TextureRaw,
     #[serde(skip_serializing, skip_deserializing)]
@@ -36,11 +36,11 @@ pub struct Bbox {
 #[derive(Clone, Debug)]
 pub struct Node {
     pub bbox: Bbox,
-    pub data: NodeKind,
+    pub data: NodeType,
 }
 
 #[derive(Clone, Debug)]
-pub enum NodeKind {
+pub enum NodeType {
     A(usize, usize, usize, Flt),
     B(Vec<usize>),
 }
@@ -73,7 +73,7 @@ impl Node {
         if let Some((_t_min, _t_max)) = mesh.nodes[x].bbox.hit(ry.origin, inv_direct) {
             let (t_min, t_max) = (t_min.min(_t_min), t_max.min(_t_max));
             match &mesh.nodes[x].data {
-                &NodeKind::A(l, r, dim, key) => {
+                &NodeType::A(l, r, dim, key) => {
                     let t = (key - ry.origin[dim]) * inv_direct[dim];
                     let (fir, sec) = if inv_direct[dim] > 0.0 { (l, r) } else { (r, l) };
                     if t > t_max {
@@ -87,7 +87,7 @@ impl Node {
                         None => Self::hit(sec, ry, inv_direct, t, t_max, mesh),
                     };
                 }
-                &NodeKind::B(ref vi) => {
+                &NodeType::B(ref vi) => {
                     let (mut ans, mut best) = (None, 1e30);
                     for &i in vi.iter() {
                         let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
@@ -110,9 +110,9 @@ impl Node {
 
 impl Mesh {
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn new(coord: Coord, path: String, texture: TextureRaw) -> Self {
+    pub fn new(transform: Transform, path: String, texture: TextureRaw) -> Self {
         macro_rules! n {() => { Vec::new() };}
-        let mut ret = Self { coord, path, texture, pos: n!(), norm: n!(), uv: n!(), tri: n!(), pre: n!(), nodes: n!() };
+        let mut ret = Self { transform, path, texture, pos: n!(), norm: n!(), uv: n!(), tri: n!(), pre: n!(), nodes: n!() };
         ret.init();
         ret
     }
@@ -130,7 +130,7 @@ impl Mesh {
             Bbox { min, max }
         };
         if tri.len() <= 16 {
-            self.nodes.push(Node { bbox, data: NodeKind::B(tri.iter().map(|i| i.3).collect()) });
+            self.nodes.push(Node { bbox, data: NodeType::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
         let mind = |a: usize, b: usize, c: usize, d: usize| pos[a][d].min(pos[b][d]).min(pos[c][d]);
@@ -161,14 +161,14 @@ impl Mesh {
             }
         });
         if l.len().max(r.len()) == tri.len() {
-            self.nodes.push(Node { bbox, data: NodeKind::B(tri.iter().map(|i| i.3).collect()) });
+            self.nodes.push(Node { bbox, data: NodeType::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
-        self.nodes.push(Node { bbox, data: NodeKind::A(0, 0, dim, key) });
+        self.nodes.push(Node { bbox, data: NodeType::A(0, 0, dim, key) });
         let ret = self.nodes.len() - 1;
         let l = self.new_node(&mut l);
         let r = self.new_node(&mut r);
-        if let NodeKind::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
+        if let NodeType::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
             *x = l;
             *y = r;
         };
@@ -181,7 +181,6 @@ impl Geo for Mesh {
         let file = File::open(&self.path).expect(&format!("Cannot open {}", self.path));
         let (mut t_v, mut t_vt, mut t_vn, mut t_f) =
             (Vec::new(), Vec::new(), Vec::new(), Vec::new());
-        let trans = Mat::shift(50.0, 0.0, 50.0) * Mat::scale(5.0, 5.0, 5.0);
         for line in BufReader::new(file).lines() {
             let line = line.expect("Failed to load mesh object");
             let mut w = line.split_whitespace();
@@ -211,9 +210,9 @@ impl Geo for Mesh {
                 }};
             }
             match w.next() {
-                Some("v") => t_v.push(trans * Vct::new(nx!(w), nx!(w), nx!(w))),
+                Some("v") => t_v.push(self.transform.value * Vct::new(nx!(w), nx!(w), nx!(w))),
                 Some("vt") => t_vt.push((nxt!(w, Flt), nxt!(w, Flt))),
-                Some("vn") => t_vn.push(trans % Vct::new(nx!(w), nx!(w), nx!(w))),
+                Some("vn") => t_vn.push(self.transform.value % Vct::new(nx!(w), nx!(w), nx!(w))),
                 Some("f") => t_f.push((nxtf!(w), nxtf!(w), nxtf!(w))),
                 _ => (),
             }

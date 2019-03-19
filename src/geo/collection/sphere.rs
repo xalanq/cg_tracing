@@ -1,19 +1,19 @@
 use crate::{
-    geo::{Coord, Geo, HitResult, HitTemp, Material, Texture, TextureRaw},
-    linalg::{Ray, Vct},
+    geo::{Geo, HitResult, HitTemp, Material, Texture, TextureRaw},
+    linalg::{Ray, Transform, Vct},
     Deserialize, Flt, Serialize, EPS,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sphere {
     pub radius: Flt,
-    pub coord: Coord,
+    pub transform: Transform,
     pub texture: Texture,
 }
 
 impl Sphere {
-    pub fn new(radius: Flt, coord: Coord, texture: Texture) -> Box<dyn Geo> {
-        let mut ret = Self { radius, coord, texture };
+    pub fn new(radius: Flt, transform: Transform, texture: Texture) -> Box<dyn Geo> {
+        let mut ret = Self { radius, transform, texture };
         ret.init();
         Box::new(ret)
     }
@@ -21,14 +21,13 @@ impl Sphere {
 
 impl Geo for Sphere {
     fn init(&mut self) {
-        self.coord.norm();
         if let Texture::Image(ref mut img) = self.texture {
             img.load();
         }
     }
 
     fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
-        let op = self.coord.p - r.origin;
+        let op = self.transform.pos() - r.origin;
         let b = op.dot(r.direct);
         let det = b * b - op.len2() + self.radius * self.radius;
         if det < 0.0 {
@@ -50,13 +49,13 @@ impl Geo for Sphere {
         let pos = r.origin + r.direct * tmp.0;
         HitResult {
             pos,
-            norm: (pos - self.coord.p).norm(),
+            norm: (pos - self.transform.pos()).norm(),
             texture: match self.texture {
                 Texture::Raw(ref raw) => *raw,
                 Texture::Image(ref img) => {
-                    let p = self.coord.to_object(pos).norm();
-                    let px = (p.y * 0.5 + 0.5) * img.image.w as Flt;
-                    let py = (p.z * 0.5 + 0.5) * img.image.h as Flt;
+                    let p = (self.transform.inv * pos).norm();
+                    let px = (p.x * 0.5 + 0.5) * img.image.w as Flt;
+                    let py = (p.y * 0.5 + 0.5) * img.image.h as Flt;
                     let col = img.image.get_repeat(px as isize, py as isize);
                     TextureRaw {
                         emission: Vct::zero(),
