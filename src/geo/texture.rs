@@ -1,5 +1,4 @@
-use crate::{image::Image, utils::Flt, vct::Vct};
-use serde::{Deserialize, Serialize};
+use crate::{linalg::Vct, utils::Image, Deserialize, Flt, Serialize};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Material {

@@ -1,7 +1,4 @@
-use crate::{
-    utils::{to_byte, Flt},
-    vct::Vct,
-};
+use crate::{linalg::Vct, utils::to_byte, Flt};
 use image;
 use std::fs::File;
 use std::io::Write;

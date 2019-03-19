@@ -1,9 +1,19 @@
-use crate::utils::Flt;
-use serde::{Deserialize, Serialize};
+use crate::{Deserialize, Flt, Serialize};
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::ops::{Div, DivAssign, Mul, MulAssign};
 use std::ops::{Index, Neg, Rem};
+
+/*
+   y
+   |
+   |
+   |
+   o--------x
+  /
+ /
+z
+*/
 
 #[derive(Copy, Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct Vct {

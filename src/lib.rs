@@ -1,12 +1,14 @@
-pub mod camera;
 pub mod geo;
-pub mod mat;
-pub mod image;
-pub mod prelude;
-pub mod ray;
-pub mod texture;
-pub mod utils;
-pub mod vct;
-pub mod world;
+pub mod linalg;
 #[macro_use]
-mod macros;
+pub mod macros;
+pub mod prelude;
+pub mod scene;
+pub mod utils;
+
+pub use serde::{Deserialize, Serialize};
+
+pub type Flt = f64;
+
+pub const EPS: Flt = 1e-4;
+pub const PI: Flt = std::f64::consts::PI as Flt;

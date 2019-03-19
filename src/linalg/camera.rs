@@ -1,5 +1,4 @@
-use crate::{utils::Flt, vct::Vct};
-use serde::{Deserialize, Serialize};
+use crate::{linalg::Vct, Deserialize, Flt, Serialize};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Camera {

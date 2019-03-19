@@ -1,9 +1,5 @@
-pub use crate::camera::Camera;
-pub use crate::geo::*;
-pub use crate::image::Image;
-pub use crate::mat::Mat;
-pub use crate::ray::Ray;
-pub use crate::utils;
-pub use crate::vct::Vct;
-pub use crate::world::World;
-pub use crate::*;
+pub use crate::{
+    geo::Material,
+    linalg::{Camera, Mat, Ray, Vct},
+    *,
+};

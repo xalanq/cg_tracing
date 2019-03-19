@@ -1,11 +1,9 @@
 use crate::{
-    camera::Camera,
+    geo::Material,
     geo::{Geo, HitResult},
-    image::Image,
-    ray::Ray,
-    texture::Material,
-    utils::{clamp, Flt, Rng, PI},
-    vct::Vct,
+    linalg::{Camera, Ray, Vct},
+    utils::{clamp, Image, Rng},
+    Flt, PI,
 };
 use pbr::ProgressBar;
 use rand::prelude::*;

@@ -1,9 +1,12 @@
-use crate::geo::*;
+use crate::{
+    geo::{Coord, Geo, HitResult, HitTemp, TextureRaw},
+    linalg::{Mat, Ray, Vct},
+    Deserialize, Flt, Serialize, EPS,
+};
 use std::collections::HashMap;
 use std::default::Default;
 use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
+use std::io::{BufRead, BufReader};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Mesh {
@@ -24,25 +27,25 @@ pub struct Mesh {
     pub nodes: Vec<Node>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Cube {
+#[derive(Clone, Debug, Default)]
+pub struct Bbox {
     pub min: Vct,
     pub max: Vct,
 }
 
 #[derive(Clone, Debug)]
 pub struct Node {
-    pub cube: Cube,
+    pub bbox: Bbox,
     pub data: NodeKind,
 }
 
 #[derive(Clone, Debug)]
 pub enum NodeKind {
-    A((usize, usize), usize, Flt),
-    B(usize),
+    A(usize, usize, usize, Flt),
+    B(Vec<usize>),
 }
 
-impl Cube {
+impl Bbox {
     fn hit(&self, origin: Vct, inv_direct: Vct) -> Option<(Flt, Flt)> {
         let a = (self.min - origin) * inv_direct;
         let b = (self.max - origin) * inv_direct;
@@ -66,11 +69,11 @@ impl Node {
         t_min: Flt,
         t_max: Flt,
         mesh: &Mesh,
-    ) -> Option<(Flt, Option<(usize, Flt, Flt)>)> {
-        if let Some((_t_min, _t_max)) = mesh.nodes[x].cube.hit(ry.origin, inv_direct) {
+    ) -> Option<HitTemp> {
+        if let Some((_t_min, _t_max)) = mesh.nodes[x].bbox.hit(ry.origin, inv_direct) {
             let (t_min, t_max) = (t_min.min(_t_min), t_max.min(_t_max));
-            match mesh.nodes[x].data {
-                NodeKind::A((l, r), dim, key) => {
+            match &mesh.nodes[x].data {
+                &NodeKind::A(l, r, dim, key) => {
                     let t = (key - ry.origin[dim]) * inv_direct[dim];
                     let (fir, sec) = if inv_direct[dim] > 0.0 { (l, r) } else { (r, l) };
                     if t > t_max {
@@ -84,16 +87,20 @@ impl Node {
                         None => Self::hit(sec, ry, inv_direct, t, t_max, mesh),
                     };
                 }
-                NodeKind::B(i) => {
-                    let m = mesh.pre[i];
-                    let (o, d) = (m * ry.origin, m * ry.direct);
-                    let t = -o.z / d.z;
-                    if t > EPS {
-                        let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                        if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
-                            return Some((t, Some((i, u, v))));
+                &NodeKind::B(ref vi) => {
+                    let (mut ans, mut best) = (None, 1e30);
+                    for &i in vi.iter() {
+                        let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
+                        let t = -o.z / d.z;
+                        if t > EPS {
+                            let (u, v) = (o.x + t * d.x, o.y + t * d.y);
+                            if u >= 0.0 && v >= 0.0 && u + v <= 1.0 && t < best {
+                                best = t;
+                                ans = Some((t, Some((i, u, v))));
+                            }
                         }
                     }
+                    return ans;
                 }
             };
         }
@@ -102,19 +109,28 @@ impl Node {
 }
 
 impl Mesh {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn new(coord: Coord, path: String, texture: TextureRaw) -> Self {
+        macro_rules! n {() => { Vec::new() };}
+        let mut ret = Self { coord, path, texture, pos: n!(), norm: n!(), uv: n!(), tri: n!(), pre: n!(), nodes: n!() };
+        ret.init();
+        ret
+    }
+
     fn new_node(&mut self, tri: &mut [(usize, usize, usize, usize)]) -> usize {
+        assert!(tri.len() != 0);
         let pos = &self.pos;
-        let cube = {
+        let bbox = {
             let mut min = Vct::new(1e30, 1e30, 1e30);
             let mut max = Vct::new(-1e30, -1e30, -1e30);
             tri.iter().for_each(|&(a, b, c, _)| {
                 min = min.min(pos[a]).min(pos[b]).min(pos[c]);
                 max = max.max(pos[a]).max(pos[b]).max(pos[c]);
             });
-            Cube { min, max }
+            Bbox { min, max }
         };
-        if tri.len() == 1 {
-            self.nodes.push(Node { cube, data: NodeKind::B(tri[0].3) });
+        if tri.len() <= 16 {
+            self.nodes.push(Node { bbox, data: NodeKind::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
         let mind = |a: usize, b: usize, c: usize, d: usize| pos[a][d].min(pos[b][d]).min(pos[c][d]);
@@ -125,17 +141,16 @@ impl Mesh {
             });
             avg.iter_mut().for_each(|a| *a /= tri.len() as Flt);
             tri.iter().for_each(|&(a, b, c, _)| {
-                var.iter_mut()
-                    .enumerate()
-                    .for_each(|(d, t)| *t += (mind(a, b, c, d) - avg[d]).powi(2));
+                let f = |(d, t): (usize, &mut Flt)| *t += (mind(a, b, c, d) - avg[d]).powi(2);
+                var.iter_mut().enumerate().for_each(f);
             });
             var.iter().enumerate().max_by(|x, y| x.1.partial_cmp(y.1).unwrap()).unwrap().0
         };
         tri.sort_by(|&(a, b, c, _), &(x, y, z, _)| {
             mind(a, b, c, dim).partial_cmp(&mind(x, y, z, dim)).unwrap()
         });
-        let (i, j, k, _) = tri[tri.len() / 2];
-        let key = mind(i, j, k, dim);
+        let mid = tri[tri.len() / 2];
+        let key = mind(mid.0, mid.1, mid.2, dim);
         let (mut l, mut r) = (Vec::new(), Vec::new());
         tri.iter().for_each(|&(a, b, c, i)| {
             if mind(a, b, c, dim) < key {
@@ -145,13 +160,17 @@ impl Mesh {
                 r.push((a, b, c, i));
             }
         });
-        self.nodes.push(Node { cube, data: NodeKind::A((0, 0), dim, key) });
+        if l.len().max(r.len()) == tri.len() {
+            self.nodes.push(Node { bbox, data: NodeKind::B(tri.iter().map(|i| i.3).collect()) });
+            return self.nodes.len() - 1;
+        }
+        self.nodes.push(Node { bbox, data: NodeKind::A(0, 0, dim, key) });
         let ret = self.nodes.len() - 1;
-        let l = if l.len() > 0 { self.new_node(&mut l) } else { 0 };
-        let r = if r.len() > 0 { self.new_node(&mut r) } else { 0 };
-        if let NodeKind::A(ref mut t, _, _) = self.nodes[ret].data {
-            t.0 = l;
-            t.1 = r;
+        let l = self.new_node(&mut l);
+        let r = self.new_node(&mut r);
+        if let NodeKind::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
+            *x = l;
+            *y = r;
         };
         ret
     }
@@ -162,6 +181,7 @@ impl Geo for Mesh {
         let file = File::open(&self.path).expect(&format!("Cannot open {}", self.path));
         let (mut t_v, mut t_vt, mut t_vn, mut t_f) =
             (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let trans = Mat::shift(50.0, 0.0, 50.0) * Mat::scale(5.0, 5.0, 5.0);
         for line in BufReader::new(file).lines() {
             let line = line.expect("Failed to load mesh object");
             let mut w = line.split_whitespace();
@@ -191,9 +211,9 @@ impl Geo for Mesh {
                 }};
             }
             match w.next() {
-                Some("v") => t_v.push(self.coord.to_world(Vct::new(nx!(w), nx!(w), nx!(w)))),
+                Some("v") => t_v.push(trans * Vct::new(nx!(w), nx!(w), nx!(w))),
                 Some("vt") => t_vt.push((nxt!(w, Flt), nxt!(w, Flt))),
-                Some("vn") => t_vn.push(self.coord.to_world(Vct::new(nx!(w), nx!(w), nx!(w)))),
+                Some("vn") => t_vn.push(trans % Vct::new(nx!(w), nx!(w), nx!(w))),
                 Some("f") => t_f.push((nxtf!(w), nxtf!(w), nxtf!(w))),
                 _ => (),
             }
@@ -219,44 +239,44 @@ impl Geo for Mesh {
             let n = e1 % e2;
             let ni = Vct::new(1.0 / n.x, 1.0 / n.y, 1.0 / n.z);
             let nv = v1.dot(n);
+            let (x2, x3) = (v2 % v1, v3 % v1);
             #[cfg_attr(rustfmt, rustfmt_skip)]
             self.pre.push({
                 if n.x.abs() > n.y.abs().max(n.z.abs()) {
-                    let (x1, x2) = (v2.y * v1.z - v2.z * v1.y, v3.y * v1.z - v3.z * v1.y);
                     Mat {
-                        m00: 0.0, m01: e2.z * ni.x,  m02: -e2.y * ni.x, m03: x2 * ni.x,
-                        m10: 0.0, m11: -e1.z * ni.x, m12: e1.y * ni.x,  m13: -x1 * ni.x,
+                        m00: 0.0, m01: e2.z * ni.x,  m02: -e2.y * ni.x, m03: x3.x * ni.x,
+                        m10: 0.0, m11: -e1.z * ni.x, m12: e1.y * ni.x,  m13: -x2.x * ni.x,
                         m20: 1.0, m21: n.y * ni.x,   m22: n.z * ni.x,   m23: -nv * ni.x,
                         m33: 1.0, ..Default::default()
                     }
                 } else if n.y.abs() > n.z.abs() {
-                    let (x1, x2) = (v2.z * v1.x - v2.x * v1.z, v3.z * v1.x - v3.x * v1.z);
                     Mat {
-                        m00: -e2.z * ni.y, m01: 0.0, m02: e2.x * ni.y,  m03: x2 * ni.y,
-                        m10: e1.z * ni.y,  m11: 0.0, m12: -e1.x * ni.y, m13: -x1 * ni.y,
+                        m00: -e2.z * ni.y, m01: 0.0, m02: e2.x * ni.y,  m03: x3.y * ni.y,
+                        m10: e1.z * ni.y,  m11: 0.0, m12: -e1.x * ni.y, m13: -x2.y * ni.y,
                         m20: n.x * ni.y,   m21: 1.0, m22: n.z * ni.y,   m23: -nv * ni.y,
                         m33: 1.0, ..Default::default()
                     }
-                } else {
-                    let (x1, x2) = (v2.x * v1.y - v2.y * v1.x, v3.x * v1.y - v3.y * v1.x);
+                } else if n.z.abs() > EPS {
                     Mat {
-                        m00: e2.y * ni.z,  m01: -e2.x * ni.z, m02: 0.0, m03: x2 * ni.z,
-                        m10: -e1.y * ni.z, m11: e1.x * ni.z,  m12: 0.0, m13: -x1 * ni.z,
+                        m00: e2.y * ni.z,  m01: -e2.x * ni.z, m02: 0.0, m03: x3.z * ni.z,
+                        m10: -e1.y * ni.z, m11: e1.x * ni.z,  m12: 0.0, m13: -x2.z * ni.z,
                         m20: n.x * ni.z,   m21: n.y * ni.z,   m22: 1.0, m23: -nv * ni.z,
                         m33: 1.0, ..Default::default()
                     }
+                } else {
+                    panic!("Invalid triangle");
                 }
             });
         });
         self.new_node(&mut tri);
     }
 
-    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<(usize, Flt, Flt)>)> {
+    fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         let inv_direct = Vct::new(1.0 / r.direct.x, 1.0 / r.direct.y, 1.0 / r.direct.z);
         Node::hit(0, r, inv_direct, 0.0, 1e30, self)
     }
 
-    fn hit(&self, r: &Ray, tmp: (Flt, Option<(usize, Flt, Flt)>)) -> HitResult {
+    fn hit(&self, r: &Ray, tmp: HitTemp) -> HitResult {
         let (i, u, v) = tmp.1.unwrap();
         let (a, b, c) = self.tri[i];
         HitResult {

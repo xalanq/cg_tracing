@@ -1,4 +1,8 @@
-use crate::geo::*;
+use crate::{
+    geo::{Coord, Geo, HitResult, HitTemp, Material, Texture, TextureRaw},
+    linalg::{Ray, Vct},
+    Deserialize, Flt, Serialize, EPS,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sphere {
@@ -23,7 +27,7 @@ impl Geo for Sphere {
         }
     }
 
-    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<(usize, Flt, Flt)>)> {
+    fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         let op = self.coord.p - r.origin;
         let b = op.dot(r.direct);
         let det = b * b - op.len2() + self.radius * self.radius;
@@ -42,7 +46,7 @@ impl Geo for Sphere {
         None
     }
 
-    fn hit(&self, r: &Ray, tmp: (Flt, Option<(usize, Flt, Flt)>)) -> HitResult {
+    fn hit(&self, r: &Ray, tmp: HitTemp) -> HitResult {
         let pos = r.origin + r.direct * tmp.0;
         HitResult {
             pos,

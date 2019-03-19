@@ -1,4 +1,8 @@
-use crate::geo::*;
+use crate::{
+    geo::{Coord, Geo, HitResult, HitTemp, Texture, TextureRaw},
+    linalg::{Ray, Vct},
+    Deserialize, Serialize, EPS,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Plane {
@@ -24,7 +28,7 @@ impl Geo for Plane {
     }
 
     // calculate t, which means r.origin + r.direct * t is the intersection point
-    fn hit_t(&self, r: &Ray) -> Option<(Flt, Option<(usize, Flt, Flt)>)> {
+    fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         let d = self.coord.z.dot(r.direct);
         if d.abs() > EPS {
             let t = self.coord.z.dot(self.coord.p - r.origin) / d;
@@ -36,7 +40,7 @@ impl Geo for Plane {
     }
 
     // return the hit result
-    fn hit(&self, r: &Ray, tmp: (Flt, Option<(usize, Flt, Flt)>)) -> HitResult {
+    fn hit(&self, r: &Ray, tmp: HitTemp) -> HitResult {
         let pos = r.origin + r.direct * tmp.0;
         let n = self.coord.z;
         HitResult {

@@ -1,7 +1,17 @@
-use crate::utils::Flt;
-use crate::vct::Vct;
+use crate::{linalg::Vct, Flt};
 use std::default::Default;
-use std::ops::Mul;
+use std::ops::{Mul, Rem};
+
+/*
+   y
+   |
+   |
+   |
+   o--------x
+  /
+ /
+z
+*/
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Copy, Clone, Debug, Default)]
@@ -13,23 +23,51 @@ pub struct Mat {
 }
 
 impl Mat {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn world_to_object(x: Vct, y: Vct, z: Vct, p: Vct) -> Vct {
-        let m = Self {
-            m00: x.x, m01: x.y, m02: x.z,
-            m10: y.x, m11: y.y, m12: y.z,
-            m20: z.x, m21: z.y, m22: z.z,
-            m33: 1.0, ..Default::default()
-        };
-        m * p
+    pub fn scale(x: Flt, y: Flt, z: Flt) -> Mat {
+        Mat { m00: x, m11: y, m22: z, m33: 1.0, ..Default::default() }
+    }
+
+    pub fn shift(x: Flt, y: Flt, z: Flt) -> Mat {
+        Mat { m00: 1.0, m11: 1.0, m22: 1.0, m33: 1.0, m03: x, m13: y, m23: z, ..Default::default() }
+    }
+
+    pub fn rot_x(radian: Flt) -> Mat {
+        let (sin, cos) = (radian.sin(), radian.cos());
+        Mat { m00: 1.0, m11: cos, m12: -sin, m21: sin, m22: cos, m33: 1.0, ..Default::default() }
+    }
+
+    pub fn rot_x_deg(deg: Flt) -> Mat {
+        Mat::rot_x(deg.to_radians())
+    }
+
+    pub fn rot_y(radian: Flt) -> Mat {
+        let (sin, cos) = (radian.sin(), radian.cos());
+        Mat { m00: cos, m02: sin, m11: 1.0, m20: -sin, m22: cos, m33: 1.0, ..Default::default() }
+    }
+
+    pub fn rot_y_deg(deg: Flt) -> Mat {
+        Mat::rot_y(deg.to_radians())
+    }
+
+    pub fn rot_z(radian: Flt) -> Mat {
+        let (sin, cos) = (radian.sin(), radian.cos());
+        Mat { m00: cos, m01: -sin, m10: sin, m11: cos, m22: 1.0, m33: 1.0, ..Default::default() }
+    }
+
+    pub fn rot_z_deg(deg: Flt) -> Mat {
+        Mat::rot_z(deg.to_radians())
+    }
+
+    pub fn to_vec(&self) -> Vct {
+        Vct::new(self.m03, self.m13, self.m23)
     }
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn object_to_world(x: Vct, y: Vct, z: Vct, p: Vct) -> Vct {
+    pub fn world_to_object(x: Vct, y: Vct, z: Vct, p: Vct) -> Vct {
         let m = Self {
-            m00: x.x, m01: x.y, m02: x.z,
-            m10: y.x, m11: y.y, m12: y.z,
-            m20: z.x, m21: z.y, m22: z.z,
+            m00: x.x, m10: y.x, m20: z.x,
+            m01: x.y, m11: y.y, m21: z.y,
+            m02: x.z, m12: y.z, m22: z.z,
             m33: 1.0, ..Default::default()
         };
         m * p
@@ -60,6 +98,7 @@ impl Mul<Mat> for Mat {
     }
 }
 
+// (x, y, z, 1)
 impl Mul<Vct> for Mat {
     type Output = Vct;
     fn mul(self, rhs: Vct) -> Vct {
@@ -67,6 +106,18 @@ impl Mul<Vct> for Mat {
             x: self.m00 * rhs.x + self.m01 * rhs.y + self.m02 * rhs.z + self.m03,
             y: self.m10 * rhs.x + self.m11 * rhs.y + self.m12 * rhs.z + self.m13,
             z: self.m20 * rhs.x + self.m21 * rhs.y + self.m22 * rhs.z + self.m23,
+        }
+    }
+}
+
+// (x, y, z, 0)
+impl Rem<Vct> for Mat {
+    type Output = Vct;
+    fn rem(self, rhs: Vct) -> Vct {
+        Vct {
+            x: self.m00 * rhs.x + self.m01 * rhs.y + self.m02 * rhs.z,
+            y: self.m10 * rhs.x + self.m11 * rhs.y + self.m12 * rhs.z,
+            z: self.m20 * rhs.x + self.m21 * rhs.y + self.m22 * rhs.z,
         }
     }
 }

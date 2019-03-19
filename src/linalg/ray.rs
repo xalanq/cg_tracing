@@ -1,5 +1,4 @@
-use crate::vct::Vct;
-use serde::{Deserialize, Serialize};
+use crate::{linalg::Vct, Deserialize, Serialize};
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Ray {

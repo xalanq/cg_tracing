@@ -1,13 +1,22 @@
+pub mod image;
+
+pub use self::image::Image;
+
 use crate::{
-    camera::Camera,
-    geo::{Geo, Mesh, Plane, Sphere},
-    image::Image,
-    world::World,
+    geo::{
+        collection::{Mesh, Plane, Sphere},
+        Geo,
+    },
+    linalg::Camera,
+    scene::World,
+    Flt,
 };
+use pbr::ProgressBar;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
+use std::collections::HashMap;
+use std::fs;
 use std::thread;
-pub type Flt = f64;
-pub const PI: Flt = std::f64::consts::PI as Flt;
-pub const EPS: Flt = 1e-4;
 
 pub fn clamp(x: Flt) -> Flt {
     if x < 0.0 {
@@ -45,12 +54,6 @@ impl Rng {
         x as Flt * INV32
     }
 }
-
-use pbr::ProgressBar;
-use serde::de::DeserializeOwned;
-use serde_json::Value;
-use std::collections::HashMap;
-use std::fs;
 
 pub type FromJsonFunc = fn(Value) -> Box<dyn Geo>;
 
