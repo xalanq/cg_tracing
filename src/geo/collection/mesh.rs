@@ -41,14 +41,14 @@ pub struct Node {
 
 #[derive(Clone, Debug)]
 pub enum NodeType {
-    A(usize, usize, usize, Flt),
+    A(usize, usize, usize),
     B(Vec<usize>),
 }
 
 impl Bbox {
-    fn hit(&self, origin: Vct, inv_direct: Vct) -> Option<(Flt, Flt)> {
-        let a = (self.min - origin) * inv_direct;
-        let b = (self.max - origin) * inv_direct;
+    fn hit(&self, origin: &Vct, inv_direct: &Vct) -> Option<(Flt, Flt)> {
+        let a = (self.min - *origin) * *inv_direct;
+        let b = (self.max - *origin) * *inv_direct;
         let min = a.min(b);
         let max = a.max(b);
         let t_min = min.x.max(min.y).max(min.z).max(0.0);
@@ -62,49 +62,32 @@ impl Bbox {
 }
 
 impl Node {
-    fn hit(
-        x: usize,
-        ry: &Ray,
-        inv_direct: Vct,
-        t_min: Flt,
-        t_max: Flt,
-        mesh: &Mesh,
-    ) -> Option<HitTemp> {
-        if let Some((_t_min, _t_max)) = mesh.nodes[x].bbox.hit(ry.origin, inv_direct) {
-            let (t_min, t_max) = (t_min.min(_t_min), t_max.min(_t_max));
-            match &mesh.nodes[x].data {
-                &NodeType::A(l, r, dim, key) => {
-                    let t = (key - ry.origin[dim]) * inv_direct[dim];
-                    let (fir, sec) = if inv_direct[dim] > 0.0 { (l, r) } else { (r, l) };
-                    if t > t_max {
-                        return Self::hit(fir, ry, inv_direct, t_min, t_max, mesh);
+    fn hit(x: usize, ry: &Ray, inv_direct: &Vct, ans: &mut Option<HitTemp>, mesh: &Mesh) {
+        if let Some((t_min, _)) = mesh.nodes[x].bbox.hit(&ry.origin, inv_direct) {
+            if *ans == None || t_min < ans.unwrap().0 {
+                match &mesh.nodes[x].data {
+                    &NodeType::A(l, r, dim) => {
+                        let (fir, sec) = if inv_direct[dim] > 0.0 { (l, r) } else { (r, l) };
+                        Self::hit(fir, ry, inv_direct, ans, mesh);
+                        Self::hit(sec, ry, inv_direct, ans, mesh);
                     }
-                    if t < t_min {
-                        return Self::hit(sec, ry, inv_direct, t_min, t_max, mesh);
-                    }
-                    return match Self::hit(fir, ry, inv_direct, t_min, t, mesh) {
-                        Some(o) => Some(o),
-                        None => Self::hit(sec, ry, inv_direct, t, t_max, mesh),
-                    };
-                }
-                &NodeType::B(ref vi) => {
-                    let (mut ans, mut best) = (None, 1e30);
-                    for &i in vi.iter() {
-                        let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
-                        let t = -o.z / d.z;
-                        if t > EPS {
-                            let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                            if u >= 0.0 && v >= 0.0 && u + v <= 1.0 && t < best {
-                                best = t;
-                                ans = Some((t, Some((i, u, v))));
+                    &NodeType::B(ref vi) => {
+                        for &i in vi.iter() {
+                            let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
+                            let t = -o.z / d.z;
+                            if t > EPS {
+                                let (u, v) = (o.x + t * d.x, o.y + t * d.y);
+                                if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
+                                    if *ans == None || t < ans.unwrap().0 {
+                                        *ans = Some((t, Some((i, u, v))));
+                                    }
+                                }
                             }
                         }
                     }
-                    return ans;
-                }
-            };
+                };
+            }
         }
-        None
     }
 }
 
@@ -119,13 +102,13 @@ impl Mesh {
 
     fn new_node(&mut self, tri: &mut [(usize, usize, usize, usize)]) -> usize {
         assert!(tri.len() != 0);
-        let pos = &self.pos;
+        let p = &self.pos;
         let bbox = {
             let mut min = Vct::new(1e30, 1e30, 1e30);
             let mut max = Vct::new(-1e30, -1e30, -1e30);
             tri.iter().for_each(|&(a, b, c, _)| {
-                min = min.min(pos[a]).min(pos[b]).min(pos[c]);
-                max = max.max(pos[a]).max(pos[b]).max(pos[c]);
+                min = min.min(p[a]).min(p[b]).min(p[c]);
+                max = max.max(p[a]).max(p[b]).max(p[c]);
             });
             Bbox { min, max }
         };
@@ -133,42 +116,49 @@ impl Mesh {
             self.nodes.push(Node { bbox, data: NodeType::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
-        let mind = |a: usize, b: usize, c: usize, d: usize| pos[a][d].min(pos[b][d]).min(pos[c][d]);
+        let ctr = |a: usize, b: usize, c: usize, d: usize| (p[a][d] + p[b][d] + p[c][d]) / 3.0;
         let dim = {
             let (mut var, mut avg) = ([0.0; 3], [0.0; 3]);
             tri.iter().for_each(|&(a, b, c, _)| {
-                avg.iter_mut().enumerate().for_each(|(d, t)| *t += mind(a, b, c, d));
+                avg.iter_mut().enumerate().for_each(|(d, t)| *t += ctr(a, b, c, d));
             });
             avg.iter_mut().for_each(|a| *a /= tri.len() as Flt);
             tri.iter().for_each(|&(a, b, c, _)| {
-                let f = |(d, t): (usize, &mut Flt)| *t += (mind(a, b, c, d) - avg[d]).powi(2);
+                let f = |(d, t): (usize, &mut Flt)| *t += (ctr(a, b, c, d) - avg[d]).powi(2);
                 var.iter_mut().enumerate().for_each(f);
             });
             var.iter().enumerate().max_by(|x, y| x.1.partial_cmp(y.1).unwrap()).unwrap().0
         };
         tri.sort_by(|&(a, b, c, _), &(x, y, z, _)| {
-            mind(a, b, c, dim).partial_cmp(&mind(x, y, z, dim)).unwrap()
+            ctr(a, b, c, dim).partial_cmp(&ctr(x, y, z, dim)).unwrap()
         });
         let mid = tri[tri.len() / 2];
-        let key = mind(mid.0, mid.1, mid.2, dim);
+        let key = ctr(mid.0, mid.1, mid.2, dim);
         let (mut l, mut r) = (Vec::new(), Vec::new());
+        let mut same = 0;
         tri.iter().for_each(|&(a, b, c, i)| {
-            if mind(a, b, c, dim) < key {
+            let mut cnt = 0;
+            if p[a][dim].min(p[b][dim]).min(p[c][dim]) < key {
                 l.push((a, b, c, i));
+                cnt += 1;
             }
-            if pos[a][dim].max(pos[b][dim]).max(pos[c][dim]) >= key {
+            if p[a][dim].max(p[b][dim]).max(p[c][dim]) >= key {
                 r.push((a, b, c, i));
+                cnt += 1;
+            }
+            if cnt == 2 {
+                same += 1;
             }
         });
-        if l.len().max(r.len()) == tri.len() {
+        if same as Flt / tri.len() as Flt >= 0.5 {
             self.nodes.push(Node { bbox, data: NodeType::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
-        self.nodes.push(Node { bbox, data: NodeType::A(0, 0, dim, key) });
+        self.nodes.push(Node { bbox, data: NodeType::A(0, 0, dim) });
         let ret = self.nodes.len() - 1;
         let l = self.new_node(&mut l);
         let r = self.new_node(&mut r);
-        if let NodeType::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
+        if let NodeType::A(ref mut x, ref mut y, _) = self.nodes[ret].data {
             *x = l;
             *y = r;
         };
@@ -185,19 +175,19 @@ impl Geo for Mesh {
             let line = line.expect("Failed to load mesh object");
             let mut w = line.split_whitespace();
             macro_rules! nx {
-                ($w:expr) => {
-                    $w.next().unwrap().parse().unwrap()
+                () => {
+                    w.next().unwrap().parse().unwrap()
                 };
             }
             macro_rules! nxt {
-                ($w:expr, $t:ty) => {
-                    $w.next().unwrap().parse::<$t>().unwrap()
+                ($t:ty) => {
+                    w.next().unwrap().parse::<$t>().unwrap()
                 };
             }
             macro_rules! nxtf {
-                ($w:expr) => {{
+                () => {{
                     let mut a = Vec::new();
-                    $w.next().unwrap().split('/').for_each(|x| {
+                    w.next().unwrap().split('/').for_each(|x| {
                         if let Ok(i) = x.parse::<usize>() {
                             a.push(i);
                         }
@@ -205,15 +195,21 @@ impl Geo for Mesh {
                     match a.len() {
                         2 => (a[0], 0, a[1]),
                         3 => (a[0], a[1], a[2]),
-                        _ => panic!("The mesh object has non-triangle"),
+                        _ => panic!("invalid vertex of a face"),
                     }
                 }};
             }
+            macro_rules! wp {
+                ($e:expr) => {{
+                    $e;
+                    w.next().map(|_| panic!("The mesh object has a non-triangle"));
+                }};
+            }
             match w.next() {
-                Some("v") => t_v.push(self.transform.value * Vct::new(nx!(w), nx!(w), nx!(w))),
-                Some("vt") => t_vt.push((nxt!(w, Flt), nxt!(w, Flt))),
-                Some("vn") => t_vn.push(self.transform.value % Vct::new(nx!(w), nx!(w), nx!(w))),
-                Some("f") => t_f.push((nxtf!(w), nxtf!(w), nxtf!(w))),
+                Some("v") => wp!(t_v.push(self.transform.value * Vct::new(nx!(), nx!(), nx!()))),
+                Some("vt") => wp!(t_vt.push((nxt!(Flt), nxt!(Flt)))),
+                Some("vn") => wp!(t_vn.push(self.transform.value % Vct::new(nx!(), nx!(), nx!()))),
+                Some("f") => wp!(t_f.push((nxtf!(), nxtf!(), nxtf!()))),
                 _ => (),
             }
         }
@@ -272,7 +268,9 @@ impl Geo for Mesh {
 
     fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         let inv_direct = Vct::new(1.0 / r.direct.x, 1.0 / r.direct.y, 1.0 / r.direct.z);
-        Node::hit(0, r, inv_direct, 0.0, 1e30, self)
+        let mut ans = None;
+        Node::hit(0, r, &inv_direct, &mut ans, self);
+        ans
     }
 
     fn hit(&self, r: &Ray, tmp: HitTemp) -> HitResult {

@@ -10,5 +10,5 @@ pub use serde::{Deserialize, Serialize};
 
 pub type Flt = f64;
 
-pub const EPS: Flt = 1e-4;
+pub const EPS: Flt = 1e-9;
 pub const PI: Flt = std::f64::consts::PI as Flt;
