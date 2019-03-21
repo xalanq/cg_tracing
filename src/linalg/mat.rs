@@ -54,6 +54,23 @@ impl Mat {
     pub fn rot_degree(axis: &str, degree: Flt) -> Self {
         Self::rot(axis, degree.to_radians())
     }
+
+    // axis: p + tv
+    pub fn rot_line(p: Vct, v: Vct, radian: Flt) -> Self {
+        let a = (v.dot(Vct::new(1.0, 0.0, 0.0)) / v.len()).acos();
+        let b = (v.dot(Vct::new(0.0, 1.0, 0.0)) / v.len()).acos();
+        Self::shift(p.x, p.y, p.z)
+            * Self::rot("x", -a)
+            * Self::rot("y", -b)
+            * Self::rot("z", radian)
+            * Self::rot("y", b)
+            * Self::rot("x", a)
+            * Self::shift(-p.x, -p.y, -p.z)
+    }
+
+    pub fn rot_line_degree(p: Vct, v: Vct, degree: Flt) -> Self {
+        Self::rot_line(p, v, degree.to_radians())
+    }
 }
 
 impl Mul<Mat> for Mat {

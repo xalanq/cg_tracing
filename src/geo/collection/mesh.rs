@@ -1,4 +1,4 @@
-use super::ds::KDTree;
+use super::ds::{BSPTree, KDTree};
 use crate::{
     geo::{Geo, HitResult, HitTemp, TextureRaw},
     linalg::{Mat, Ray, Transform, Vct},
@@ -15,11 +15,13 @@ use std::io::{BufRead, BufReader};
 #[derive(Serialize, Deserialize)]
 pub enum TreeType {
     KDTree,
+    BSPTree,
 }
 
 #[derive(Clone, Debug)]
 pub enum Tree {
     KDTree(KDTree),
+    BSPTree(BSPTree),
 }
 
 #[derive(Clone, Debug)]
@@ -148,6 +150,11 @@ impl Mesh {
                 ret.build(&pos, &tri);
                 Tree::KDTree(ret)
             }
+            TreeType::BSPTree => {
+                let mut ret = BSPTree::default();
+                ret.build(&pos, &tri);
+                Tree::BSPTree(ret)
+            }
         };
         (pos, norm, uv, tri, pre, tree)
     }
@@ -156,7 +163,8 @@ impl Mesh {
 impl Geo for Mesh {
     fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         match &self.tree {
-            Tree::KDTree(ref t) => t.hit(r, self),
+            &Tree::KDTree(ref t) => t.hit(r, self),
+            &Tree::BSPTree(ref t) => t.hit(r, self),
         }
     }
 

@@ -27,7 +27,7 @@ impl KDTree {
         &self,
         x: usize,
         t_min: Flt,
-        t_max: Flt,
+        mut t_max: Flt,
         ry: &Ray,
         inv_direct: &Vct,
         neg_index: &[bool; 3],
@@ -35,31 +35,33 @@ impl KDTree {
         mesh: &Mesh,
     ) {
         if let Some((min, max)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
-            if t_min <= min && max <= t_max && (*ans == None || min < ans.unwrap().0) {
+            if let Some((a, _)) = ans {
+                if *a < t_max {
+                    t_max = *a;
+                }
+            }
+            if t_min <= min && max < t_max {
                 match &self.nodes[x].data {
                     &Data::A(l, r, dim, key) => {
-                        let t = (key - ry.origin[dim]) * inv_direct[dim];
+                        let dir = inv_direct[dim];
+                        let t = (key - ry.origin[dim]) * dir;
                         // 考虑在划分的平面那里剪裁光线线段
                         // 由于划分平面的左边是不会有跨越的三角形的，故可以剪枝
-                        if (t < t_min && inv_direct[dim] > 0.0)
-                            || (t > t_max && inv_direct[dim] < 0.0)
-                        {
+                        if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
+                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                        } else if t < t_min || t > t_max {
+                            self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                        } else if dir >= 0.0 {
+                            self._hit(l, t_min, t, ry, inv_direct, neg_index, ans, mesh);
                             self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                         } else {
-                            if t < t_min || t > t_max {
-                                self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                                self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            } else if inv_direct[dim] > 0.0 {
-                                self._hit(l, t_min, t, ry, inv_direct, neg_index, ans, mesh);
-                                self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            } else {
-                                self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                                self._hit(l, t, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            }
+                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            self._hit(l, t, t_max, ry, inv_direct, neg_index, ans, mesh);
                         }
                     }
-                    &Data::B(ref vi) => {
-                        for &i in vi.iter() {
+                    &Data::B(ref tri) => {
+                        for &i in tri.iter() {
                             let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
                             let t = -o.z / d.z;
                             if t > EPS && (*ans == None || t < ans.unwrap().0) {
@@ -75,7 +77,13 @@ impl KDTree {
         }
     }
 
-    fn new_node(&mut self, p: &Vec<Vct>, tri: &mut [(usize, usize, usize, usize)]) -> usize {
+    fn new_node(&mut self, p: &Vec<Vct>, tri: &mut Vec<(usize, usize, usize, usize)>) -> usize {
+        macro_rules! free {
+            ($w:expr) => {
+                $w.clear();
+                $w.shrink_to_fit();
+            };
+        }
         assert!(tri.len() != 0);
         let bbox = {
             let mut min = Vct::new(1e30, 1e30, 1e30);
@@ -120,6 +128,7 @@ impl KDTree {
             self.nodes.push(Node { bbox, data: Data::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
+        free!(tri);
         self.nodes.push(Node { bbox, data: Data::A(0, 0, dim, key) });
         let ret = self.nodes.len() - 1;
         let l = self.new_node(p, &mut l);
@@ -127,7 +136,7 @@ impl KDTree {
         if let Data::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
             *x = l;
             *y = r;
-        };
+        }
         ret
     }
 
