@@ -28,14 +28,14 @@ pub struct Mesh {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Bbox {
+pub struct BBox {
     pub min: Vct,
     pub max: Vct,
 }
 
 #[derive(Clone, Debug)]
 pub struct Node {
-    pub bbox: Bbox,
+    pub bbox: BBox,
     pub data: NodeType,
 }
 
@@ -45,7 +45,7 @@ pub enum NodeType {
     B(Vec<usize>),
 }
 
-impl Bbox {
+impl BBox {
     fn hit(&self, origin: &Vct, inv_direct: &Vct) -> Option<(Flt, Flt)> {
         let a = (self.min - *origin) * *inv_direct;
         let b = (self.max - *origin) * *inv_direct;
@@ -110,7 +110,7 @@ impl Mesh {
                 min = min.min(p[a]).min(p[b]).min(p[c]);
                 max = max.max(p[a]).max(p[b]).max(p[c]);
             });
-            Bbox { min, max }
+            BBox { min, max }
         };
         if tri.len() <= 16 {
             self.nodes.push(Node { bbox, data: NodeType::B(tri.iter().map(|i| i.3).collect()) });
@@ -150,7 +150,7 @@ impl Mesh {
                 same += 1;
             }
         });
-        if same as Flt / tri.len() as Flt >= 0.5 {
+        if same as Flt / tri.len() as Flt >= 0.5 || l.len().max(r.len()) == tri.len() {
             self.nodes.push(Node { bbox, data: NodeType::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
