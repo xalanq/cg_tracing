@@ -12,20 +12,12 @@ pub struct Plane {
 
 impl Plane {
     pub fn new(transform: Transform, texture: Texture) -> Box<dyn Geo> {
-        let mut ret = Self { transform, texture };
-        ret.init();
+        let ret = Self { transform, texture };
         Box::new(ret)
     }
 }
 
 impl Geo for Plane {
-    // init texture if it is a image
-    fn init(&mut self) {
-        if let Texture::Image(ref mut img) = self.texture {
-            img.load();
-        }
-    }
-
     // calculate t, which means r.origin + r.direct * t is the intersection point
     fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         let n = self.transform.z();

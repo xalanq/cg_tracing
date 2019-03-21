@@ -3,6 +3,7 @@ use crate::{
     Deserialize, Flt, Serialize,
 };
 use serde::de::{Deserializer, SeqAccess, Visitor};
+use serde::ser::{SerializeSeq, Serializer};
 use std::fmt;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -14,12 +15,10 @@ pub enum TransformType {
     RotateRadian { axis: String, radian: Flt },
 }
 
-#[derive(Clone, Debug, Serialize, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Transform {
     pub seq: Vec<TransformType>,
-    #[serde(skip_serializing, skip_deserializing)]
     pub value: Mat,
-    #[serde(skip_serializing, skip_deserializing)]
     pub inv: Mat,
 }
 
@@ -73,6 +72,19 @@ impl Transform {
     }
 }
 
+impl Serialize for Transform {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.seq.len()))?;
+        for e in self.seq.iter() {
+            seq.serialize_element(e)?;
+        }
+        seq.end()
+    }
+}
+
 impl<'de> Deserialize<'de> for Transform {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -103,7 +115,6 @@ impl<'de> Deserialize<'de> for Transform {
             }
         }
 
-        let visitor = TransformVisitor {};
-        deserializer.deserialize_seq(visitor)
+        deserializer.deserialize_seq(TransformVisitor {})
     }
 }

@@ -13,19 +13,12 @@ pub struct Sphere {
 
 impl Sphere {
     pub fn new(radius: Flt, transform: Transform, texture: Texture) -> Box<dyn Geo> {
-        let mut ret = Self { radius, transform, texture };
-        ret.init();
+        let ret = Self { radius, transform, texture };
         Box::new(ret)
     }
 }
 
 impl Geo for Sphere {
-    fn init(&mut self) {
-        if let Texture::Image(ref mut img) = self.texture {
-            img.load();
-        }
-    }
-
     fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
         let op = self.transform.pos() - r.origin;
         let b = op.dot(r.direct);

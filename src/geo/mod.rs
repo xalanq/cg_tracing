@@ -18,7 +18,6 @@ pub struct HitResult {
 pub type HitTemp = (Flt, Option<(usize, Flt, Flt)>);
 
 pub trait Geo: Send + Sync {
-    fn init(&mut self) {} // use it in from_json
     fn hit_t(&self, r: &Ray) -> Option<HitTemp>;
     fn hit(&self, r: &Ray, tmp: HitTemp) -> HitResult;
 }

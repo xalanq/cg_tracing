@@ -58,8 +58,7 @@ impl Rng {
 pub type FromJsonFunc = fn(Value) -> Box<dyn Geo>;
 
 pub fn new_from_json<T: Geo + DeserializeOwned + 'static>(v: Value) -> Box<dyn Geo> {
-    let mut obj = serde_json::from_value::<T>(v).expect("Invalid Value");
-    obj.init();
+    let obj = serde_json::from_value::<T>(v).expect("Invalid Value");
     Box::new(obj)
 }
 

@@ -1,46 +1,53 @@
-use super::ds::KDNode;
+use super::ds::KDTree;
 use crate::{
     geo::{Geo, HitResult, HitTemp, TextureRaw},
     linalg::{Mat, Ray, Transform, Vct},
     Deserialize, Flt, Serialize, EPS,
 };
+use serde::de::{self, Deserializer, MapAccess, Visitor};
+use serde::ser::{SerializeStruct, Serializer};
 use std::collections::HashMap;
 use std::default::Default;
+use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+pub enum TreeType {
+    KDTree,
+}
+
+#[derive(Clone, Debug)]
+pub enum Tree {
+    KDTree(KDTree),
+}
+
+#[derive(Clone, Debug)]
 pub struct Mesh {
-    pub transform: Transform,
     pub path: String,
     pub texture: TextureRaw,
-    #[serde(skip_serializing, skip_deserializing)]
+    pub transform: Transform,
     pub pos: Vec<Vct>,
-    #[serde(skip_serializing, skip_deserializing)]
     pub norm: Vec<Vct>,
-    #[serde(skip_serializing, skip_deserializing)]
     pub uv: Vec<(Flt, Flt)>,
-    #[serde(skip_serializing, skip_deserializing)]
     pub tri: Vec<(usize, usize, usize)>,
-    #[serde(skip_serializing, skip_deserializing)]
     pub pre: Vec<Mat>,
-    #[serde(skip_serializing, skip_deserializing)]
-    pub nodes: Vec<KDNode>,
+    pub tree: Tree,
 }
 
 impl Mesh {
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn new(transform: Transform, path: String, texture: TextureRaw) -> Self {
-        macro_rules! n {() => { Vec::new() };}
-        let mut ret = Self { transform, path, texture, pos: n!(), norm: n!(), uv: n!(), tri: n!(), pre: n!(), nodes: n!() };
-        ret.init();
-        ret
+    pub fn new(path: String, texture: TextureRaw, transform: Transform, tree_type: TreeType) -> Self {
+        let (pos, norm, uv, tri, pre, tree) = Self::load(&path, &transform, tree_type);
+        Self { path, texture, transform, pos, norm, uv, tri, pre, tree }
     }
-}
 
-impl Geo for Mesh {
-    fn init(&mut self) {
-        let file = File::open(&self.path).expect(&format!("Cannot open {}", self.path));
+    fn load(
+        path: &str,
+        transform: &Transform,
+        tree_type: TreeType,
+    ) -> (Vec<Vct>, Vec<Vct>, Vec<(Flt, Flt)>, Vec<(usize, usize, usize)>, Vec<Mat>, Tree) {
+        let file = File::open(path).expect(&format!("Cannot open {}", path));
         let (mut t_v, mut t_vt, mut t_vn, mut t_f) =
             (Vec::new(), Vec::new(), Vec::new(), Vec::new());
         for line in BufReader::new(file).lines() {
@@ -78,35 +85,37 @@ impl Geo for Mesh {
                 }};
             }
             match w.next() {
-                Some("v") => wp!(t_v.push(self.transform.value * Vct::new(nx!(), nx!(), nx!()))),
+                Some("v") => wp!(t_v.push(transform.value * Vct::new(nx!(), nx!(), nx!()))),
                 Some("vt") => wp!(t_vt.push((nxt!(Flt), nxt!(Flt)))),
-                Some("vn") => wp!(t_vn.push(self.transform.value % Vct::new(nx!(), nx!(), nx!()))),
+                Some("vn") => wp!(t_vn.push(transform.value % Vct::new(nx!(), nx!(), nx!()))),
                 Some("f") => wp!(t_f.push((nxtf!(), nxtf!(), nxtf!()))),
                 _ => (),
             }
         }
         let mut vis = HashMap::new();
+        let (mut pos, mut uv, mut norm, mut tri, mut pre) =
+            (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
         macro_rules! gg {
             ($a:expr) => {{
                 *vis.entry($a).or_insert_with(|| {
-                    self.pos.push(t_v[$a.0 - 1]);
-                    self.uv.push(if $a.1 != 0 { t_vt[$a.1 - 1] } else { (-1.0, -1.0) });
-                    self.norm.push(t_vn[$a.2 - 1]);
-                    self.pos.len() - 1
+                    pos.push(t_v[$a.0 - 1]);
+                    uv.push(if $a.1 != 0 { t_vt[$a.1 - 1] } else { (-1.0, -1.0) });
+                    norm.push(t_vn[$a.2 - 1]);
+                    pos.len() - 1
                 })
             }};
         }
         t_f.iter().for_each(|&(a, b, c)| {
             let g = (gg!(a), gg!(b), gg!(c));
-            self.tri.push(g);
-            let (v1, v2, v3) = (self.pos[g.0], self.pos[g.1], self.pos[g.2]);
+            tri.push(g);
+            let (v1, v2, v3) = (pos[g.0], pos[g.1], pos[g.2]);
             let (e1, e2) = (v2 - v1, v3 - v1);
             let n = e1 % e2;
             let ni = Vct::new(1.0 / n.x, 1.0 / n.y, 1.0 / n.z);
             let nv = v1.dot(n);
             let (x2, x3) = (v2 % v1, v3 % v1);
             #[cfg_attr(rustfmt, rustfmt_skip)]
-            self.pre.push({
+            pre.push({
                 if n.x.abs() > n.y.abs().max(n.z.abs()) {
                     Mat {
                         m00: 0.0, m01: e2.z * ni.x,  m02: -e2.y * ni.x, m03: x3.x * ni.x,
@@ -133,11 +142,22 @@ impl Geo for Mesh {
                 }
             });
         });
-        KDNode::new_node(self);
+        let tree = match tree_type {
+            TreeType::KDTree => {
+                let mut ret = KDTree::default();
+                ret.build(&pos, &tri);
+                Tree::KDTree(ret)
+            }
+        };
+        (pos, norm, uv, tri, pre, tree)
     }
+}
 
+impl Geo for Mesh {
     fn hit_t(&self, r: &Ray) -> Option<HitTemp> {
-        KDNode::hit(r, self)
+        match &self.tree {
+            Tree::KDTree(ref t) => t.hit(r, self),
+        }
     }
 
     fn hit(&self, r: &Ray, tmp: HitTemp) -> HitResult {
@@ -148,5 +168,91 @@ impl Geo for Mesh {
             norm: self.norm[a] * (1.0 - u - v) + self.norm[b] * u + self.norm[c] * v,
             texture: self.texture,
         }
+    }
+}
+
+impl Serialize for Mesh {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_struct("mesh", 3)?;
+        s.serialize_field("path", &self.path)?;
+        s.serialize_field("texture", &self.texture)?;
+        s.serialize_field("transform", &self.transform)?;
+        s.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Mesh {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct MeshVisitor;
+
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "snake_case")]
+        enum Field {
+            Path,
+            Texture,
+            Transform,
+            TreeType,
+            Type,
+        }
+
+        impl<'de> Visitor<'de> for MeshVisitor {
+            type Value = Mesh;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("Mesh")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Mesh, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut path = None;
+                let mut texture = None;
+                let mut transform = None;
+                let mut tree_type = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Path => {
+                            if path.is_some() {
+                                return Err(de::Error::duplicate_field("path"));
+                            }
+                            path = Some(map.next_value()?);
+                        }
+                        Field::Texture => {
+                            if texture.is_some() {
+                                return Err(de::Error::duplicate_field("texture"));
+                            }
+                            texture = Some(map.next_value()?);
+                        }
+                        Field::Transform => {
+                            if transform.is_some() {
+                                return Err(de::Error::duplicate_field("transform"));
+                            }
+                            transform = Some(map.next_value()?);
+                        }
+                        Field::TreeType => {
+                            if tree_type.is_some() {
+                                return Err(de::Error::duplicate_field("tree_type"));
+                            }
+                            tree_type = Some(map.next_value()?);
+                        }
+                        Field::Type => {}
+                    }
+                }
+                let path = path.ok_or_else(|| de::Error::missing_field("path"))?;
+                let texture = texture.ok_or_else(|| de::Error::missing_field("texture"))?;
+                let transform = transform.ok_or_else(|| de::Error::missing_field("transform"))?;
+                let tree_type = tree_type.ok_or_else(|| de::Error::missing_field("tree_type"))?;
+                Ok(Mesh::new(path, texture, transform, tree_type))
+            }
+        }
+
+        deserializer.deserialize_map(MeshVisitor {})
     }
 }

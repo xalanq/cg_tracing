@@ -1,5 +1,5 @@
 pub mod bbox;
-pub mod kdnode;
+pub mod kdtree;
 
 pub use bbox::BBox;
-pub use kdnode::{KDNode, KDNodeType};
+pub use kdtree::KDTree;
