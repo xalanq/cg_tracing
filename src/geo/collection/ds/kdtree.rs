@@ -23,19 +23,39 @@ pub struct KDTree {
 }
 
 impl KDTree {
-    fn _hit(&self, x: usize, ry: &Ray, inv_direct: &Vct, ans: &mut Option<HitTemp>, mesh: &Mesh) {
-        if let Some((t_min, _)) = self.nodes[x].bbox.hit(&ry.origin, inv_direct) {
-            if *ans == None || t_min < ans.unwrap().0 {
+    fn _hit(
+        &self,
+        x: usize,
+        t_min: Flt,
+        t_max: Flt,
+        ry: &Ray,
+        inv_direct: &Vct,
+        neg_index: &[bool; 3],
+        ans: &mut Option<HitTemp>,
+        mesh: &Mesh,
+    ) {
+        if let Some((min, max)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
+            if t_min <= min && max <= t_max && (*ans == None || min < ans.unwrap().0) {
                 match &self.nodes[x].data {
                     &Data::A(l, r, dim, key) => {
                         let t = (key - ry.origin[dim]) * inv_direct[dim];
-                        if t < 0.0 && inv_direct[dim] > 0.0 {
-                            self._hit(r, ry, inv_direct, ans, mesh);
+                        // 考虑在划分的平面那里剪裁光线线段
+                        // 由于划分平面的左边是不会有跨越的三角形的，故可以剪枝
+                        if (t < t_min && inv_direct[dim] > 0.0)
+                            || (t > t_max && inv_direct[dim] < 0.0)
+                        {
+                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                         } else {
-                            let (l, r) =
-                                if inv_direct[dim] > 0.0 && t > 0.0 { (l, r) } else { (r, l) };
-                            self._hit(r, ry, inv_direct, ans, mesh);
-                            self._hit(l, ry, inv_direct, ans, mesh);
+                            if t < t_min || t > t_max {
+                                self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            } else if inv_direct[dim] > 0.0 {
+                                self._hit(l, t_min, t, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            } else {
+                                self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(l, t, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            }
                         }
                     }
                     &Data::B(ref vi) => {
@@ -118,8 +138,9 @@ impl KDTree {
 
     pub fn hit(&self, r: &Ray, mesh: &Mesh) -> Option<HitTemp> {
         let inv_direct = Vct::new(1.0 / r.direct.x, 1.0 / r.direct.y, 1.0 / r.direct.z);
+        let neg_index = [inv_direct.x < 0.0, inv_direct.y < 0.0, inv_direct.z < 0.0];
         let mut ans = None;
-        self._hit(0, r, &inv_direct, &mut ans, mesh);
+        self._hit(0, 0.0, 1e30, r, &inv_direct, &neg_index, &mut ans, mesh);
         ans
     }
 }
