@@ -59,10 +59,9 @@ impl BSPTree {
                                 }
                             }
                         }
-                        let d = n.dot(ry.direct);
-                        if d.abs() > EPS {
-                            let dir = (ry.origin - p).dot(n);
-                            let t = n.dot(p - ry.origin) / d;
+                        let dir = n.dot(ry.direct);
+                        if dir.abs() > EPS {
+                            let t = n.dot(p - ry.origin) / dir;
                             if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                             } else if (t <= t_min && dir <= 0.0) || (t >= t_max && dir >= 0.0) {
@@ -82,11 +81,10 @@ impl BSPTree {
                         }
                     }
                     &Data::A(l, r, p, n) => {
-                        let d = n.dot(ry.direct);
-                        if d.abs() > EPS {
+                        let dir = n.dot(ry.direct);
+                        if dir.abs() > EPS {
                             // same as kdtree
-                            let t = n.dot(p - ry.origin) / d;
-                            let dir = (ry.origin - p).dot(n);
+                            let t = n.dot(p - ry.origin) / dir;
                             if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                             } else if t < t_min || t > t_max {
@@ -233,7 +231,6 @@ impl BSPTree {
                 }
             }
         });
-        /*
         if !init_k && (kl.len() as isize - kr.len() as isize).abs() as Flt / len <= 0.1 {
             let km = km.iter().map(|v| v.3).collect();
             self.nodes.push(Node { bbox, data: Data::X(0, 0, kpl.0, kpl.1, km) });
@@ -251,7 +248,6 @@ impl BSPTree {
             }
             return ret;
         }
-        */
         if l.len().max(r.len() + m.len()) == tri.len() {
             self.nodes.push(Node { bbox, data: Data::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
