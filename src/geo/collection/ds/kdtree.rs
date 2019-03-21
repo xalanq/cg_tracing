@@ -13,7 +13,7 @@ pub struct Node {
 
 #[derive(Clone, Debug)]
 pub enum Data {
-    A(usize, usize, usize), // l, r, dim
+    A(usize, usize, usize, Flt), // l, r, dim, key
     B(Vec<usize>),
 }
 
@@ -27,10 +27,16 @@ impl KDTree {
         if let Some((t_min, _)) = self.nodes[x].bbox.hit(&ry.origin, inv_direct) {
             if *ans == None || t_min < ans.unwrap().0 {
                 match &self.nodes[x].data {
-                    &Data::A(l, r, dim) => {
-                        let (fir, sec) = if inv_direct[dim] > 0.0 { (l, r) } else { (r, l) };
-                        self._hit(fir, ry, inv_direct, ans, mesh);
-                        self._hit(sec, ry, inv_direct, ans, mesh);
+                    &Data::A(l, r, dim, key) => {
+                        let t = (key - ry.origin[dim]) * inv_direct[dim];
+                        if t < 0.0 && inv_direct[dim] > 0.0 {
+                            self._hit(r, ry, inv_direct, ans, mesh);
+                        } else {
+                            let (l, r) =
+                                if inv_direct[dim] > 0.0 && t > 0.0 { (l, r) } else { (r, l) };
+                            self._hit(r, ry, inv_direct, ans, mesh);
+                            self._hit(l, ry, inv_direct, ans, mesh);
+                        }
                     }
                     &Data::B(ref vi) => {
                         for &i in vi.iter() {
@@ -64,42 +70,41 @@ impl KDTree {
             self.nodes.push(Node { bbox, data: Data::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
-        let ctr = |a: usize, b: usize, c: usize, d: usize| (p[a][d] + p[b][d] + p[c][d]) / 3.0;
+        let max = |a: usize, b: usize, c: usize, d: usize| p[a][d].max(p[b][d].max(p[c][d]));
         let dim = {
             let (mut var, mut avg) = ([0.0; 3], [0.0; 3]);
             tri.iter().for_each(|&(a, b, c, _)| {
-                avg.iter_mut().enumerate().for_each(|(d, t)| *t += ctr(a, b, c, d));
+                avg.iter_mut().enumerate().for_each(|(d, t)| *t += max(a, b, c, d));
             });
             avg.iter_mut().for_each(|a| *a /= tri.len() as Flt);
             tri.iter().for_each(|&(a, b, c, _)| {
-                let f = |(d, t): (usize, &mut Flt)| *t += (ctr(a, b, c, d) - avg[d]).powi(2);
+                let f = |(d, t): (usize, &mut Flt)| *t += (max(a, b, c, d) - avg[d]).powi(2);
                 var.iter_mut().enumerate().for_each(f);
             });
             var.iter().enumerate().max_by(|x, y| x.1.partial_cmp(y.1).unwrap()).unwrap().0
         };
         tri.sort_by(|&(a, b, c, _), &(x, y, z, _)| {
-            ctr(a, b, c, dim).partial_cmp(&ctr(x, y, z, dim)).unwrap()
+            max(a, b, c, dim).partial_cmp(&max(x, y, z, dim)).unwrap()
         });
         let mid = tri[tri.len() / 2];
-        let key = ctr(mid.0, mid.1, mid.2, dim);
+        let key = max(mid.0, mid.1, mid.2, dim);
         let (mut l, mut r) = (Vec::new(), Vec::new());
         tri.iter().for_each(|&(a, b, c, i)| {
-            if p[a][dim].min(p[b][dim]).min(p[c][dim]) < key {
+            if max(a, b, c, dim) < key {
                 l.push((a, b, c, i));
-            }
-            if p[a][dim].max(p[b][dim]).max(p[c][dim]) >= key {
+            } else {
                 r.push((a, b, c, i));
             }
         });
-        if l.len().max(r.len()) as Flt >= tri.len() as Flt * 0.9 {
+        if l.len().max(r.len()) == tri.len() {
             self.nodes.push(Node { bbox, data: Data::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
-        self.nodes.push(Node { bbox, data: Data::A(0, 0, dim) });
+        self.nodes.push(Node { bbox, data: Data::A(0, 0, dim, key) });
         let ret = self.nodes.len() - 1;
         let l = self.new_node(p, &mut l);
         let r = self.new_node(p, &mut r);
-        if let Data::A(ref mut x, ref mut y, _) = self.nodes[ret].data {
+        if let Data::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
             *x = l;
             *y = r;
         };
