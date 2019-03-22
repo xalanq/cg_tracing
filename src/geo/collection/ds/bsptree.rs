@@ -24,6 +24,7 @@ pub struct BSPTree {
 }
 
 const K: usize = 16;
+const EP: Flt = 1e-2;
 
 impl BSPTree {
     fn _hit(
@@ -37,13 +38,13 @@ impl BSPTree {
         ans: &mut Option<HitTemp>,
         mesh: &Mesh,
     ) {
-        if let Some((min, max)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
+        if let Some((min, _)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
             if let Some((a, _)) = ans {
-                if *a < t_max {
-                    t_max = *a;
+                if *a + EP < t_max {
+                    t_max = *a + EP;
                 }
             }
-            if t_min <= min && max < t_max {
+            if t_min <= min && min < t_max {
                 match &self.nodes[x].data {
                     &Data::X(l, r, p, n, ref tri) => {
                         for &i in tri.iter() {
@@ -53,27 +54,27 @@ impl BSPTree {
                                 let (u, v) = (o.x + t * d.x, o.y + t * d.y);
                                 if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
                                     *ans = Some((t, Some((i, u, v))));
-                                    if t < t_max {
-                                        t_max = t;
+                                    if t + EP < t_max {
+                                        t_max = t + EP;
                                     }
                                 }
                             }
                         }
                         let dir = n.dot(ry.direct);
-                        if dir.abs() > EPS {
+                        if dir.abs() > EP {
                             let t = n.dot(p - ry.origin) / dir;
                             if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                             } else if (t <= t_min && dir <= 0.0) || (t >= t_max && dir >= 0.0) {
                                 self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            } else if dir >= 0.0 {
-                                self._hit(l, t_min, t, ry, inv_direct, neg_index, ans, mesh);
-                                self._hit(r, t, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            } else if dir > 0.0 {
+                                self._hit(l, t_min, t + EP, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(r, t - EP, t_max, ry, inv_direct, neg_index, ans, mesh);
                             } else {
-                                self._hit(r, t_min, t, ry, inv_direct, neg_index, ans, mesh);
-                                self._hit(l, t, t_max, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(r, t_min, t + EP, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(l, t - EP, t_max, ry, inv_direct, neg_index, ans, mesh);
                             }
-                        } else if (ry.origin - p).dot(n) > 0.0 {
+                        } else if dir.abs() <= EPS && (ry.origin - p).dot(n) > 0.0 {
                             self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                         } else {
                             self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
@@ -82,22 +83,22 @@ impl BSPTree {
                     }
                     &Data::A(l, r, p, n) => {
                         let dir = n.dot(ry.direct);
-                        if dir.abs() > EPS {
+                        if dir.abs() > EP {
                             // same as kdtree
                             let t = n.dot(p - ry.origin) / dir;
                             if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            } else if t < t_min || t > t_max {
+                            } else if t <= t_min || t >= t_max {
                                 self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            } else if dir >= 0.0 {
-                                self._hit(l, t_min, t, ry, inv_direct, neg_index, ans, mesh);
+                            } else if dir > 0.0 {
+                                self._hit(l, t_min, t + EP, ry, inv_direct, neg_index, ans, mesh);
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                             } else {
                                 self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                                self._hit(l, t, t_max, ry, inv_direct, neg_index, ans, mesh);
+                                self._hit(l, t - EP, t_max, ry, inv_direct, neg_index, ans, mesh);
                             }
-                        } else if (ry.origin - p).dot(n) > 0.0 {
+                        } else if dir.abs() <= EPS && (ry.origin - p).dot(n) > 0.0 {
                             self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                         } else {
                             self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
@@ -190,9 +191,9 @@ impl BSPTree {
             let x = (a - pos).dot(norm);
             let y = (b - pos).dot(norm);
             let z = (c - pos).dot(norm);
-            if x > 0.0 && y > 0.0 && z > 0.0 {
+            if x >= 0.0 && y >= 0.0 && z >= 0.0 {
                 1
-            } else if x < 0.0 && y < 0.0 && z < 0.0 {
+            } else if x <= 0.0 && y <= 0.0 && z <= 0.0 {
                 -1
             } else {
                 0

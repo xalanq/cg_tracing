@@ -34,13 +34,13 @@ impl KDTree {
         ans: &mut Option<HitTemp>,
         mesh: &Mesh,
     ) {
-        if let Some((min, max)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
+        if let Some((min, _)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
             if let Some((a, _)) = ans {
                 if *a < t_max {
                     t_max = *a;
                 }
             }
-            if t_min <= min && max < t_max {
+            if t_min <= min && min < t_max {
                 match &self.nodes[x].data {
                     &Data::A(l, r, dim, key) => {
                         let dir = inv_direct[dim];
@@ -53,11 +53,11 @@ impl KDTree {
                             self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                             self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                         } else if dir >= 0.0 {
-                            self._hit(l, t_min, t, ry, inv_direct, neg_index, ans, mesh);
+                            self._hit(l, t_min, t + EPS, ry, inv_direct, neg_index, ans, mesh);
                             self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
                         } else {
                             self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            self._hit(l, t, t_max, ry, inv_direct, neg_index, ans, mesh);
+                            self._hit(l, t - EPS, t_max, ry, inv_direct, neg_index, ans, mesh);
                         }
                     }
                     &Data::B(ref tri) => {
