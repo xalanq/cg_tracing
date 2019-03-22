@@ -14,7 +14,7 @@ impl BBox {
         let max = a.max(b);
         let t_min = min.x.max(min.y).max(min.z).max(0.0);
         let t_max = max.x.min(max.y).min(max.z);
-        if t_min < t_max {
+        if t_min <= t_max {
             Some((t_min, t_max))
         } else {
             None
@@ -57,7 +57,7 @@ impl BBox {
         if tzmax < tmax {
             tmax = tzmax;
         }
-        if tmin < tmax {
+        if tmin <= tmax {
             return Some((tmin, tmax));
         }
         None

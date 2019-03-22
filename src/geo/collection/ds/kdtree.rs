@@ -22,59 +22,74 @@ pub struct KDTree {
     nodes: Vec<Node>,
 }
 
+const K: usize = 16;
+
 impl KDTree {
-    fn _hit(
-        &self,
-        x: usize,
-        t_min: Flt,
-        mut t_max: Flt,
-        ry: &Ray,
-        inv_direct: &Vct,
-        neg_index: &[bool; 3],
-        ans: &mut Option<HitTemp>,
-        mesh: &Mesh,
-    ) {
-        if let Some((min, _)) = self.nodes[x].bbox.fast_hit(&ry.origin, inv_direct, neg_index) {
-            if let Some((a, _)) = ans {
-                if *a < t_max {
-                    t_max = *a;
-                }
-            }
-            if t_min <= min && min < t_max {
-                match &self.nodes[x].data {
-                    &Data::A(l, r, dim, key) => {
-                        let dir = inv_direct[dim];
-                        let t = (key - ry.origin[dim]) * dir;
-                        // 考虑在划分的平面那里剪裁光线线段
-                        // 由于划分平面的左边是不会有跨越的三角形的，故可以剪枝
-                        if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
-                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                        } else if t < t_min || t > t_max {
-                            self._hit(l, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                        } else if dir >= 0.0 {
-                            self._hit(l, t_min, t + EPS, ry, inv_direct, neg_index, ans, mesh);
-                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                        } else {
-                            self._hit(r, t_min, t_max, ry, inv_direct, neg_index, ans, mesh);
-                            self._hit(l, t - EPS, t_max, ry, inv_direct, neg_index, ans, mesh);
+    fn _hit(&self, ry: &Ray, mesh: &Mesh) -> Option<HitTemp> {
+        let origin = &ry.origin;
+        let inv_direct = &Vct::new(1.0 / ry.direct.x, 1.0 / ry.direct.y, 1.0 / ry.direct.z);
+        let neg_index = &[inv_direct.x < 0.0, inv_direct.y < 0.0, inv_direct.z < 0.0];
+        macro_rules! bbox {
+            ($x:expr) => {
+                self.nodes[$x].bbox
+            };
+        }
+        if let Some((t_min, t_max)) = bbox!(0).fast_hit(origin, inv_direct, neg_index) {
+            let mut ans: Option<HitTemp> = None;
+            let mut stk = Vec::new();
+            stk.push((0, t_min, t_max));
+            while let Some((mut x, mut t_min, mut t_max)) = stk.pop() {
+                while let Some((min, max)) = bbox!(x).fast_hit(origin, inv_direct, neg_index) {
+                    if t_min < min {
+                        t_min = min;
+                    }
+                    if t_max > max {
+                        t_max = max;
+                    }
+                    if let Some((a, _)) = ans {
+                        if a < t_max {
+                            t_max = a;
                         }
                     }
-                    &Data::B(ref tri) => {
-                        for &i in tri.iter() {
-                            let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
-                            let t = -o.z / d.z;
-                            if t > EPS && (*ans == None || t < ans.unwrap().0) {
-                                let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                                if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
-                                    *ans = Some((t, Some((i, u, v))));
+                    if t_min <= t_max {
+                        match &self.nodes[x].data {
+                            &Data::A(l, r, dim, key) => {
+                                let dir = inv_direct[dim];
+                                let t = (key - ry.origin[dim]) * dir;
+                                // 考虑在划分的平面那里剪裁光线线段
+                                if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
+                                    x = r;
+                                } else if (t <= t_min && dir <= 0.0) || (t >= t_max && dir >= 0.0) {
+                                    x = l;
+                                } else {
+                                    let (l, r) = if dir >= 0.0 { (l, r) } else { (r, l) };
+                                    stk.push((r, t, t_max));
+                                    x = l;
+                                    t_max = t;
                                 }
                             }
-                        }
+                            &Data::B(ref tri) => {
+                                for &i in tri.iter() {
+                                    let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
+                                    let t = -o.z / d.z;
+                                    if t > EPS && (ans == None || t < ans.unwrap().0) {
+                                        let (u, v) = (o.x + t * d.x, o.y + t * d.y);
+                                        if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
+                                            ans = Some((t, Some((i, u, v))));
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        };
+                    } else {
+                        break;
                     }
-                };
+                }
             }
+            return ans;
         }
+        None
     }
 
     fn new_node(&mut self, p: &Vec<Vct>, tri: &mut Vec<(usize, usize, usize, usize)>) -> usize {
@@ -94,10 +109,11 @@ impl KDTree {
             });
             BBox { min, max }
         };
-        if tri.len() <= 16 {
+        if tri.len() <= K {
             self.nodes.push(Node { bbox, data: Data::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
+        let min = |a: usize, b: usize, c: usize, d: usize| p[a][d].min(p[b][d].min(p[c][d]));
         let max = |a: usize, b: usize, c: usize, d: usize| p[a][d].max(p[b][d].max(p[c][d]));
         let dim = {
             let (mut var, mut avg) = ([0.0; 3], [0.0; 3]);
@@ -114,13 +130,14 @@ impl KDTree {
         tri.sort_by(|&(a, b, c, _), &(x, y, z, _)| {
             max(a, b, c, dim).partial_cmp(&max(x, y, z, dim)).unwrap()
         });
-        let mid = tri[tri.len() / 2];
+        let mid = tri[(tri.len() as Flt * 6.0 / 10.0) as usize];
         let key = max(mid.0, mid.1, mid.2, dim);
         let (mut l, mut r) = (Vec::new(), Vec::new());
         tri.iter().for_each(|&(a, b, c, i)| {
-            if max(a, b, c, dim) < key {
+            if min(a, b, c, dim) < key {
                 l.push((a, b, c, i));
-            } else {
+            }
+            if max(a, b, c, dim) >= key {
                 r.push((a, b, c, i));
             }
         });
@@ -131,11 +148,13 @@ impl KDTree {
         free!(tri);
         self.nodes.push(Node { bbox, data: Data::A(0, 0, dim, key) });
         let ret = self.nodes.len() - 1;
-        let l = self.new_node(p, &mut l);
-        let r = self.new_node(p, &mut r);
+        let lc = self.new_node(p, &mut l);
+        free!(l);
+        let rc = self.new_node(p, &mut r);
+        free!(r);
         if let Data::A(ref mut x, ref mut y, _, _) = self.nodes[ret].data {
-            *x = l;
-            *y = r;
+            *x = lc;
+            *y = rc;
         }
         ret
     }
@@ -146,10 +165,6 @@ impl KDTree {
     }
 
     pub fn hit(&self, r: &Ray, mesh: &Mesh) -> Option<HitTemp> {
-        let inv_direct = Vct::new(1.0 / r.direct.x, 1.0 / r.direct.y, 1.0 / r.direct.z);
-        let neg_index = [inv_direct.x < 0.0, inv_direct.y < 0.0, inv_direct.z < 0.0];
-        let mut ans = None;
-        self._hit(0, 0.0, 1e30, r, &inv_direct, &neg_index, &mut ans, mesh);
-        ans
+        self._hit(r, mesh)
     }
 }
