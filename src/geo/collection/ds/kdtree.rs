@@ -130,7 +130,7 @@ impl KDTree {
         tri.sort_by(|&(a, b, c, _), &(x, y, z, _)| {
             max(a, b, c, dim).partial_cmp(&max(x, y, z, dim)).unwrap()
         });
-        let mid = tri[(tri.len() as Flt * 6.0 / 10.0) as usize];
+        let mid = tri[tri.len() / 2];
         let key = max(mid.0, mid.1, mid.2, dim);
         let (mut l, mut r) = (Vec::new(), Vec::new());
         tri.iter().for_each(|&(a, b, c, i)| {
