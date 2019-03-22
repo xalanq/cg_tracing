@@ -81,7 +81,7 @@ impl KDTree {
                                 }
                                 break;
                             }
-                        };
+                        }
                     } else {
                         break;
                     }

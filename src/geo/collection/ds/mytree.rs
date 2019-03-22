@@ -19,13 +19,13 @@ pub enum Data {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct BSPTree {
+pub struct MyTree {
     nodes: Vec<Node>,
 }
 
 const K: usize = 16;
 
-impl BSPTree {
+impl MyTree {
     fn _hit(&self, ry: &Ray, mesh: &Mesh) -> Option<HitTemp> {
         let origin = &ry.origin;
         let inv_direct = &Vct::new(1.0 / ry.direct.x, 1.0 / ry.direct.y, 1.0 / ry.direct.z);
