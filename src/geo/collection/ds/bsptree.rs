@@ -13,8 +13,7 @@ pub struct Node {
 
 #[derive(Clone, Debug)]
 pub enum Data {
-    X(usize, usize, Vct, Vct, Vec<usize>), // l, r, pos, cross triangle
-    A(usize, usize, Vct, Vct),             // l, r, pos, norm
+    A(usize, usize, Vct, Vct), // l, r, pos, norm
     B(Vec<usize>),
 }
 
@@ -23,7 +22,7 @@ pub struct BSPTree {
     nodes: Vec<Node>,
 }
 
-const K: usize = 16;
+const K: usize = 8;
 
 impl BSPTree {
     fn _hit(&self, ry: &Ray, mesh: &Mesh) -> Option<HitTemp> {
@@ -54,20 +53,7 @@ impl BSPTree {
                     }
                     if t_min <= t_max {
                         match &self.nodes[x].data {
-                            &Data::X(l, r, p, n, ref tri) => {
-                                for &i in tri.iter() {
-                                    let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
-                                    let t = -o.z / d.z;
-                                    if t > EPS && (ans == None || t < ans.unwrap().0) {
-                                        let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                                        if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
-                                            ans = Some((t, Some((i, u, v))));
-                                            if t < t_max {
-                                                t_max = t;
-                                            }
-                                        }
-                                    }
-                                }
+                            &Data::A(l, r, p, n) => {
                                 let dir = n.dot(ry.direct);
                                 if dir.abs() > EPS {
                                     let t = n.dot(p - ry.origin) / dir;
@@ -82,31 +68,6 @@ impl BSPTree {
                                         stk.push((r, t, t_max));
                                         x = l;
                                         t_max = t;
-                                    }
-                                } else if (ry.origin - p).dot(n) > 0.0 {
-                                    x = r;
-                                } else {
-                                    stk.push((r, t_min, t_max));
-                                    x = l;
-                                }
-                            }
-                            &Data::A(l, r, p, n) => {
-                                let dir = n.dot(ry.direct);
-                                if dir.abs() > EPS {
-                                    // same as kdtree
-                                    let t = n.dot(p - ry.origin) / dir;
-                                    if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
-                                        x = r;
-                                    } else if t <= t_min || t >= t_max {
-                                        stk.push((r, t_min, t_max));
-                                        x = l;
-                                    } else if dir > 0.0 {
-                                        stk.push((r, t_min, t_max));
-                                        x = l;
-                                        t_max = t;
-                                    } else {
-                                        stk.push((l, t, t_max));
-                                        x = r;
                                     }
                                 } else if (ry.origin - p).dot(n) > 0.0 {
                                     x = r;
@@ -203,7 +164,7 @@ impl BSPTree {
                 cal(p[a], p[b], p[c]);
             }
         }
-        let on_left = |a: usize, b: usize, c: usize, pos: Vct, norm: Vct| {
+        let side = |a: usize, b: usize, c: usize, pos: Vct, norm: Vct| {
             let (a, b, c) = (p[a], p[b], p[c]);
             let x = (a - pos).dot(norm);
             let y = (b - pos).dot(norm);
@@ -216,66 +177,34 @@ impl BSPTree {
                 0
             }
         };
-        let (mut l, mut r) = (Vec::new(), Vec::new());
-        let (mut kl, mut kr, mut km) = (Vec::new(), Vec::new(), Vec::new());
-        let (mut pl, mut kpl) = ((Vct::zero(), Vct::zero()), (Vct::zero(), Vct::zero()));
-        let mut init_k = true;
+        let (mut l, mut r, mut pl) = (Vec::new(), Vec::new(), (Vct::zero(), Vct::zero()));
         let mut init = true;
         planes.iter().for_each(|&(pos, norm)| {
-            let (mut tl, mut tr, mut tm) = (Vec::new(), Vec::new(), Vec::new());
-            tri.iter().for_each(|&(a, b, c, i)| match on_left(a, b, c, pos, norm) {
+            let (mut tl, mut tr) = (Vec::new(), Vec::new());
+            tri.iter().for_each(|&(a, b, c, i)| match side(a, b, c, pos, norm) {
                 -1 => tl.push((a, b, c, i)),
                 1 => tr.push((a, b, c, i)),
-                0 => tm.push((a, b, c, i)),
+                0 => {
+                    tl.push((a, b, c, i));
+                    tr.push((a, b, c, i));
+                }
                 _ => {}
             });
             let eval = (l.len() as isize - r.len() as isize).abs();
-            let teval = (tl.len() as isize - tr.len() as isize - tm.len() as isize).abs();
+            let teval = (tl.len() as isize - tr.len() as isize).abs();
             if init || eval >= teval {
-                l = tl.clone();
-                r = tr.clone();
-                r.extend(tm.iter());
+                l = tl;
+                r = tr;
                 pl = (pos, norm);
                 init = false;
             }
-            if tm.len() <= 4 {
-                let keval = (kl.len() as isize - kr.len() as isize).abs();
-                if init_k || keval >= teval {
-                    kl = tl;
-                    kr = tr;
-                    km = tm;
-                    kpl = (pos, norm);
-                    init_k = false;
-                }
-            }
         });
-        if !init_k && (kl.len() as isize - kr.len() as isize).abs() as Flt / len <= 0.1 {
-            let km = km.iter().map(|v| v.3).collect();
-            self.nodes.push(Node { bbox, data: Data::X(0, 0, kpl.0, kpl.1, km) });
-            let ret = self.nodes.len() - 1;
-            free!(l);
-            free!(r);
-            free!(tri);
-            free!(planes);
-            let lc = self.new_node(p, &mut kl);
-            free!(kl);
-            let rc = self.new_node(p, &mut kr);
-            free!(kr);
-            if let Data::X(ref mut x, ref mut y, _, _, _) = self.nodes[ret].data {
-                *x = lc;
-                *y = rc;
-            }
-            return ret;
-        }
         if l.len().max(r.len()) == tri.len() {
             self.nodes.push(Node { bbox, data: Data::B(tri.iter().map(|i| i.3).collect()) });
             return self.nodes.len() - 1;
         }
         self.nodes.push(Node { bbox, data: Data::A(0, 0, pl.0, pl.1) });
         let ret = self.nodes.len() - 1;
-        free!(kl);
-        free!(kr);
-        free!(km);
         free!(tri);
         free!(planes);
         let lc = self.new_node(p, &mut l);
