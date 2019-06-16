@@ -2,7 +2,7 @@ use super::bbox::BBox;
 use crate::{
     geo::{collection::Mesh, HitTemp},
     linalg::{Ray, Vct},
-    Flt, EPS,
+    Flt,
 };
 
 #[derive(Clone, Debug)]
@@ -72,25 +72,7 @@ impl KDTree {
                         }
                         &Data::B(ref tri) => {
                             for &i in tri.iter() {
-                                let (m, o, d) = (&mesh.pre[i], ry.origin, ry.direct);
-                                let dz = m.m20 * d.x + m.m21 * d.y + m.m22 * d.z;
-                                if dz.abs() <= EPS {
-                                    continue;
-                                }
-                                let oz = m.m20 * o.x + m.m21 * o.y + m.m22 * o.z + m.m23;
-                                let t = -oz / dz;
-                                if t > EPS && (ans == None || t < ans.unwrap().0) {
-                                    let hit = o + d * t;
-                                    let u = m.m00 * hit.x + m.m01 * hit.y + m.m02 * hit.z + m.m03;
-                                    if u < 0.0 || u > 1.0 {
-                                        continue;
-                                    }
-                                    let v = m.m10 * hit.x + m.m11 * hit.y + m.m12 * hit.z + m.m13;
-                                    if v < 0.0 || u + v > 1.0 {
-                                        continue;
-                                    }
-                                    ans = Some((t, Some((i, u, v))));
-                                }
+                                mesh.tri_intersect_and_update(i, ry, &mut ans);
                             }
                             break;
                         }

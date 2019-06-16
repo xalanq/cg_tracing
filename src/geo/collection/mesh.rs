@@ -167,6 +167,28 @@ impl Mesh {
         };
         (pos, norm, uv, tri, pre, tree)
     }
+
+    pub fn tri_intersect_and_update(&self, i: usize, r: &Ray, ans: &mut Option<HitTemp>) {
+        let (m, o, d) = (&self.pre[i], r.origin, r.direct);
+        let dz = m.m20 * d.x + m.m21 * d.y + m.m22 * d.z;
+        if dz.abs() <= EPS {
+            return;
+        }
+        let oz = m.m20 * o.x + m.m21 * o.y + m.m22 * o.z + m.m23;
+        let t = -oz / dz;
+        if t > EPS && (ans.is_none() || t < ans.unwrap().0) {
+            let hit = o + d * t;
+            let u = m.m00 * hit.x + m.m01 * hit.y + m.m02 * hit.z + m.m03;
+            if u < 0.0 || u > 1.0 {
+                return;
+            }
+            let v = m.m10 * hit.x + m.m11 * hit.y + m.m12 * hit.z + m.m13;
+            if v < 0.0 || u + v > 1.0 {
+                return;
+            }
+            *ans = Some((t, Some((i, u, v))));
+        }
+    }
 }
 
 impl Geo for Mesh {

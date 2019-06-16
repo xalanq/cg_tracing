@@ -52,85 +52,66 @@ impl MyTree {
                             t_max = a;
                         }
                     }
-                    if t_min <= t_max {
-                        match &self.nodes[x].data {
-                            &Data::X(l, r, p, n, ref tri) => {
-                                for &i in tri.iter() {
-                                    let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
-                                    let t = -o.z / d.z;
-                                    if t > EPS && (ans == None || t < ans.unwrap().0) {
-                                        let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                                        if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
-                                            ans = Some((t, Some((i, u, v))));
-                                            if t < t_max {
-                                                t_max = t;
-                                            }
-                                        }
-                                    }
-                                }
-                                let dir = n.dot(ry.direct);
-                                if dir.abs() > EPS {
-                                    let t = n.dot(p - ry.origin) / dir;
-                                    if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
-                                        x = r;
-                                    } else if (t <= t_min && dir <= 0.0)
-                                        || (t >= t_max && dir >= 0.0)
-                                    {
-                                        x = l;
-                                    } else {
-                                        let (l, r) = if dir >= 0.0 { (l, r) } else { (r, l) };
-                                        stk.push((r, t, t_max));
-                                        x = l;
-                                        t_max = t;
-                                    }
-                                } else if (ry.origin - p).dot(n) > 0.0 {
-                                    x = r;
-                                } else {
-                                    stk.push((r, t_min, t_max));
-                                    x = l;
+                    if t_min > t_max {
+                        break;
+                    }
+                    match &self.nodes[x].data {
+                        &Data::X(l, r, p, n, ref tri) => {
+                            for &i in tri.iter() {
+                                mesh.tri_intersect_and_update(i, ry, &mut ans);
+                            }
+                            if let Some((a, _)) = ans {
+                                if a < t_max {
+                                    t_max = a;
                                 }
                             }
-                            &Data::A(l, r, p, n) => {
-                                let dir = n.dot(ry.direct);
-                                if dir.abs() > EPS {
-                                    // same as kdtree
-                                    let t = n.dot(p - ry.origin) / dir;
-                                    if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
-                                        x = r;
-                                    } else if t <= t_min || t >= t_max {
-                                        stk.push((r, t_min, t_max));
-                                        x = l;
-                                    } else if dir > 0.0 {
-                                        stk.push((r, t_min, t_max));
-                                        x = l;
-                                        t_max = t;
-                                    } else {
-                                        stk.push((l, t, t_max));
-                                        x = r;
-                                    }
-                                } else if (ry.origin - p).dot(n) > 0.0 {
+                            let dir = n.dot(ry.direct);
+                            if dir.abs() > EPS {
+                                let t = n.dot(p - ry.origin) / dir;
+                                let (l, r) = if dir >= 0.0 { (l, r) } else { (r, l) };
+                                if t <= t_min {
                                     x = r;
-                                } else {
-                                    stk.push((r, t_min, t_max));
+                                } else if t >= t_max {
                                     x = l;
+                                } else {
+                                    stk.push((r, t, t_max));
+                                    x = l;
+                                    t_max = t;
                                 }
-                            }
-                            &Data::B(ref tri) => {
-                                for &i in tri.iter() {
-                                    let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
-                                    let t = -o.z / d.z;
-                                    if t > EPS && (ans == None || t < ans.unwrap().0) {
-                                        let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                                        if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
-                                            ans = Some((t, Some((i, u, v))));
-                                        }
-                                    }
-                                }
-                                break;
+                            } else if (ry.origin - p).dot(n) > 0.0 {
+                                x = r;
+                            } else {
+                                stk.push((r, t_min, t_max));
+                                x = l;
                             }
                         }
-                    } else {
-                        break;
+                        &Data::A(l, r, p, n) => {
+                            let dir = n.dot(ry.direct);
+                            if dir.abs() > EPS {
+                                let t = n.dot(p - ry.origin) / dir;
+                                let (l, r) = if dir >= 0.0 { (l, r) } else { (r, l) };
+                                if t <= t_min {
+                                    x = r;
+                                } else if t >= t_max {
+                                    x = l;
+                                } else {
+                                    stk.push((r, t, t_max));
+                                    x = l;
+                                    t_max = t;
+                                }
+                            } else if (ry.origin - p).dot(n) > 0.0 {
+                                x = r;
+                            } else {
+                                stk.push((r, t_min, t_max));
+                                x = l;
+                            }
+                        }
+                        &Data::B(ref tri) => {
+                            for &i in tri.iter() {
+                                mesh.tri_intersect_and_update(i, ry, &mut ans);
+                            }
+                            break;
+                        }
                     }
                 }
             }
