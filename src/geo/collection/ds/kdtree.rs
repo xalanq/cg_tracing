@@ -51,39 +51,49 @@ impl KDTree {
                             t_max = a;
                         }
                     }
-                    if t_min <= t_max {
-                        match &self.nodes[x].data {
-                            &Data::A(l, r, dim, key) => {
-                                let dir = inv_direct[dim];
-                                let t = (key - ry.origin[dim]) * dir;
-                                // 考虑在划分的平面那里剪裁光线线段
-                                if (t <= t_min && dir >= 0.0) || (t >= t_max && dir <= 0.0) {
-                                    x = r;
-                                } else if (t <= t_min && dir <= 0.0) || (t >= t_max && dir >= 0.0) {
-                                    x = l;
-                                } else {
-                                    let (l, r) = if dir >= 0.0 { (l, r) } else { (r, l) };
-                                    stk.push((r, t, t_max));
-                                    x = l;
-                                    t_max = t;
-                                }
-                            }
-                            &Data::B(ref tri) => {
-                                for &i in tri.iter() {
-                                    let (o, d) = (mesh.pre[i] * ry.origin, mesh.pre[i] % ry.direct);
-                                    let t = -o.z / d.z;
-                                    if t > EPS && (ans == None || t < ans.unwrap().0) {
-                                        let (u, v) = (o.x + t * d.x, o.y + t * d.y);
-                                        if u >= 0.0 && v >= 0.0 && u + v <= 1.0 {
-                                            ans = Some((t, Some((i, u, v))));
-                                        }
-                                    }
-                                }
-                                break;
+                    if t_min > t_max {
+                        break;
+                    }
+                    match &self.nodes[x].data {
+                        &Data::A(l, r, dim, key) => {
+                            let dir = inv_direct[dim];
+                            let t = (key - ry.origin[dim]) * dir;
+                            let (l, r) = if dir >= 0.0 { (l, r) } else { (r, l) };
+                            // 考虑在划分的平面那里剪裁光线线段
+                            if t <= t_min {
+                                x = r;
+                            } else if t >= t_max {
+                                x = l;
+                            } else {
+                                stk.push((r, t, t_max));
+                                x = l;
+                                t_max = t;
                             }
                         }
-                    } else {
-                        break;
+                        &Data::B(ref tri) => {
+                            for &i in tri.iter() {
+                                let (m, o, d) = (&mesh.pre[i], ry.origin, ry.direct);
+                                let dz = m.m20 * d.x + m.m21 * d.y + m.m22 * d.z;
+                                if dz.abs() <= EPS {
+                                    continue;
+                                }
+                                let oz = m.m20 * o.x + m.m21 * o.y + m.m22 * o.z + m.m23;
+                                let t = -oz / dz;
+                                if t > EPS && (ans == None || t < ans.unwrap().0) {
+                                    let hit = o + d * t;
+                                    let u = m.m00 * hit.x + m.m01 * hit.y + m.m02 * hit.z + m.m03;
+                                    if u < 0.0 || u > 1.0 {
+                                        continue;
+                                    }
+                                    let v = m.m10 * hit.x + m.m11 * hit.y + m.m12 * hit.z + m.m13;
+                                    if v < 0.0 || u + v > 1.0 {
+                                        continue;
+                                    }
+                                    ans = Some((t, Some((i, u, v))));
+                                }
+                            }
+                            break;
+                        }
                     }
                 }
             }

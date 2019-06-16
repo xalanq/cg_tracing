@@ -73,11 +73,11 @@ impl World {
 
     fn trace(&self, r: &Ray, mut depth: usize, rng: &mut Rng) -> Vct {
         if let Some(HitResult { pos, norm, ref texture }) = self.find(r) {
-            let mut color = texture.color;
             depth += 1;
             if depth > self.max_depth {
                 return texture.emission;
             }
+            let mut color = texture.color;
             if depth > 5 {
                 let p = color.x.max(color.y.max(color.z));
                 if rng.gen() < p {
