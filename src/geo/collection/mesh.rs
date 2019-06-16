@@ -91,7 +91,9 @@ impl Mesh {
             match w.next() {
                 Some("v") => wp!(t_v.push(transform.value * Vct::new(nx!(), nx!(), nx!()))),
                 Some("vt") => wp!(t_vt.push((nxt!(Flt), nxt!(Flt)))),
-                Some("vn") => wp!(t_vn.push(transform.value % Vct::new(nx!(), nx!(), nx!()))),
+                Some("vn") => {
+                    wp!(t_vn.push((transform.value % Vct::new(nx!(), nx!(), nx!())).norm()))
+                }
                 Some("f") => wp!(t_f.push((nxtf!(), nxtf!(), nxtf!()))),
                 _ => (),
             }
