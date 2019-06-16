@@ -23,7 +23,7 @@ pub struct MyTree {
     nodes: Vec<Node>,
 }
 
-const K: usize = 16;
+const K: usize = 8;
 
 impl MyTree {
     fn _hit(&self, ry: &Ray, mesh: &Mesh) -> Option<HitTemp> {

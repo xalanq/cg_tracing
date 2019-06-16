@@ -22,7 +22,7 @@ pub struct KDTree {
     nodes: Vec<Node>,
 }
 
-const K: usize = 16;
+const K: usize = 20;
 
 impl KDTree {
     fn _hit(&self, ry: &Ray, mesh: &Mesh) -> Option<HitTemp> {
