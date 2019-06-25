@@ -4,7 +4,7 @@ pub use self::image::Image;
 
 use crate::{
     geo::{
-        collection::{Mesh, Plane, Sphere},
+        collection::{Mesh, Plane, Sphere, BezierRotate},
         Geo,
     },
     linalg::Camera,
@@ -92,6 +92,7 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
                             "sphere" => w.add(new_from_json::<Sphere>(obj)),
                             "plane" => w.add(new_from_json::<Plane>(obj)),
                             "mesh" => w.add(new_from_json::<Mesh>(obj)),
+                            "bezier_rotate" => w.add(new_from_json::<BezierRotate>(obj)),
                             _ => {
                                 if let Some(f) = custom.get(&tp) {
                                     w.add(f(obj));

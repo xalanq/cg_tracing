@@ -1,15 +1,16 @@
-use crate::{linalg::Vct, Flt};
+use crate::{linalg::Vct, Deserialize, Flt, Serialize};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct BBox {
     pub min: Vct,
     pub max: Vct,
 }
 
 impl BBox {
-    pub fn hit(&self, origin: &Vct, inv_direct: &Vct) -> Option<(Flt, Flt)> {
-        let neg_index = &[inv_direct.x < 0.0, inv_direct.y < 0.0, inv_direct.z < 0.0];
-        self.fast_hit(origin, inv_direct, neg_index)
+    pub fn hit(&self, origin: &Vct, direct: &Vct) -> Option<(Flt, Flt)> {
+        let inv_direct = Vct::new(1.0 / direct.x, 1.0 / direct.y, 1.0 / direct.z);
+        let neg_index = [inv_direct.x < 0.0, inv_direct.y < 0.0, inv_direct.z < 0.0];
+        self.fast_hit(origin, &inv_direct, &neg_index)
         /*
         let a = (self.min - *origin) * *inv_direct;
         let b = (self.max - *origin) * *inv_direct;
@@ -76,12 +77,12 @@ mod tests {
     #[test]
     fn hit() {
         let b = BBox { min: Vct::new(0.0, 0.0, 0.0), max: Vct::new(1.0, 1.0, 1.0) };
-        let t = b.hit(&Vct::new(0.5, 0.5, 0.5), &Vct::new(1.0, 1.0 / 0.0, 1.0 / 0.0));
+        let t = b.hit(&Vct::new(0.5, 0.5, 0.5), &Vct::new(1.0, 0.0, 0.0));
         assert!(!t.is_none());
         let t = t.unwrap();
         assert!((t.0 - 0.0).abs() < 1e-5);
         assert!((t.1 - 0.5).abs() < 1e-5);
-        let t = b.hit(&Vct::new(-0.5, 0.5, 0.5), &Vct::new(1.0, 1.0 / 0.0, 1.0 / 0.0));
+        let t = b.hit(&Vct::new(-0.5, 0.5, 0.5), &Vct::new(1.0, 0.0, 0.0));
         assert!(!t.is_none());
         let t = t.unwrap();
         assert!((t.0 - 0.5).abs() < 1e-5);

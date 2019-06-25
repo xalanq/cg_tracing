@@ -7,14 +7,13 @@ use crate::{
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sphere {
     pub radius: Flt,
-    pub transform: Transform,
     pub texture: Texture,
+    pub transform: Transform,
 }
 
 impl Sphere {
-    pub fn new(radius: Flt, transform: Transform, texture: Texture) -> Box<dyn Geo> {
-        let ret = Self { radius, transform, texture };
-        Box::new(ret)
+    pub fn new(radius: Flt, texture: Texture, transform: Transform) -> Self {
+        Self { radius, texture, transform }
     }
 }
 

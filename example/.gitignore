@@ -1,1 +1,5 @@
-test.json
+*
+!smallpt.json
+!smallpt.rs
+!smallpt_json.rs
+!smallpt_plane.json

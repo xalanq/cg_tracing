@@ -11,9 +11,8 @@ pub struct Plane {
 }
 
 impl Plane {
-    pub fn new(transform: Transform, texture: Texture) -> Box<dyn Geo> {
-        let ret = Self { transform, texture };
-        Box::new(ret)
+    pub fn new(texture: Texture, transform: Transform) -> Self {
+        Self { texture, transform }
     }
 }
 
