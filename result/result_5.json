@@ -9,24 +9,13 @@
     "Ng": 1.5,
     "camera": {
         "origin": { "x": 50.0, "y": 52.0,      "z": 295.6 },
-        "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  },
+        "direct": { "x": 0.0,  "y": -0.082612, "z": -1.0  },
         "view_angle": 0.5135, 
         "plane_distance": 130.0,
         "focal_distance": 120.0,
         "aperture": 0.0
     },
     "objects": [{
-        "type": "plane",
-        "transform": [
-            { "type": "rotate", "axis": "y", "degree": 90.0 }
-        ],
-        "texture": {
-            "type": "raw",
-            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
-            "color":    { "x": 0.75, "y": 0.25, "z": 0.25 },
-            "material": "diffuse"
-        }
-    }, {
         "type": "plane",
         "transform": [
             { "type": "rotate", "axis": "y", "degree": -90.0 },
@@ -56,27 +45,25 @@
             { "type": "shift", "x": 0.0, "y": 0.0, "z": 170.0 }
         ],
         "texture": {
-            "type": "image",
-            "path": "./assets/back.jpg",
-            "material": "diffuse",
-            "width_ratio": 0.065,
-            "height_ratio": 0.065
+            "type": "raw",
+            "emission": { "x": 0.0, "y": 0.0, "z": 0.0 },
+            "color":    { "x": 0.5, "y": 0.5, "z": 0.5 },
+            "material": "diffuse"
         }
     }, {
         "type": "plane",
         "transform": [],
         "texture": {
-            "type": "image",
-            "path": "./assets/front.jpg",
-            "material": "diffuse",
-            "width_ratio": 0.065,
-            "height_ratio": 0.065
+            "type": "raw",
+            "emission": { "x": 0.0, "y": 0.0, "z": 0.0 },
+            "color":    { "x": 0.75, "y": 0.25, "z": 0.25 },
+            "material": "diffuse"
         }
     }, {
         "type": "plane",
         "transform": [
             { "type": "rotate", "axis": "x", "degree": 90.0 },
-            { "type": "shift", "x": 0.0, "y": 81.6, "z": 0.0 }
+            { "type": "shift", "x": 0.0, "y": 121.6, "z": 0.0 }
         ],
         "texture": {
             "type": "raw",
@@ -85,38 +72,12 @@
             "material": "diffuse"
         }
     }, {
-        "type": "mesh",
-        "path": "./assets/dragon.obj",
-        "tree_type": "KDTree",
-        "transform": [
-            { "type": "scale", "x": 4, "y": 4, "z": 4 },
-            { "type": "shift", "x": 50.0, "y": 0.0, "z": 80.0 }
-        ],
-        "texture": {
-            "type": "raw",
-            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
-            "color":    { "x": 0.6, "y": 0.6, "z": 1.0 },
-            "material": "refractive"
-        }
-    }, {
-        "type": "sphere",
-        "transform": [
-            { "type": "shift", "x": 28.0, "y": 28.3, "z": 80.0 }
-        ],
-        "radius": 1.8,
-        "texture": {
-            "type": "raw",
-            "emission": { "x": 0.0,   "y": 0.0,   "z": 0.0   },
-            "color":    { "x": 1.0, "y": 0.4, "z": 0.4 },
-            "material": "refractive"
-        }
-    }, {
         "type": "sphere",
         "transform": [
             { "type": "rotate", "axis": "y", "degree": 5.0 },
-            { "type": "shift", "x": 10.0, "y": 50.0, "z": 78.0 }
+            { "type": "shift", "x": 40.0, "y": 5.0, "z": 100.0 }
         ],
-        "radius": 10.0,
+        "radius": 5.0,
         "texture": {
             "type": "image",
             "path": "./assets/logo.jpg",
@@ -128,9 +89,9 @@
         "type": "sphere",
         "transform": [
             { "type": "rotate", "axis": "y", "degree": -5.0 },
-            { "type": "shift", "x": 90.0, "y": 50.0, "z": 78.0 }
+            { "type": "shift", "x": 32.0, "y": 5.0, "z": 80.0 }
         ],
-        "radius": 10.0,
+        "radius": 5.0,
         "texture": {
             "type": "image",
             "path": "./assets/logo.png",
@@ -143,9 +104,9 @@
         "transform": [
             { "type": "rotate", "axis": "x", "degree": -15.0 },
             { "type": "rotate", "axis": "y", "degree": -15.0 },
-            { "type": "shift", "x": 90.0, "y": 10.0, "z": 100.0 }
+            { "type": "shift", "x": 40.0, "y": 5.0, "z": 60.0 }
         ],
-        "radius": 10.0,
+        "radius": 5.0,
         "texture": {
             "type": "image",
             "path": "./assets/logo.png",
@@ -156,9 +117,21 @@
     }, {
         "type": "sphere",
         "transform": [
-            { "type": "shift", "x": 10.0, "y": 10.0, "z": 100.0 }
+            { "type": "shift", "x": 48.0, "y": 5.0, "z": 80.0 }
         ],
-        "radius": 10.0,
+        "radius": 5.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.6, "y": 0.6, "z": 0.6 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 58.0, "y": 5.0, "z": 60.0 }
+        ],
+        "radius": 5.0,
         "texture": {
             "type": "raw",
             "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
@@ -168,7 +141,43 @@
     }, {
         "type": "sphere",
         "transform": [
-            { "type": "shift", "x": 50.0, "y": 380.4, "z": 81.6 }
+            { "type": "shift", "x": 68.0, "y": 5.0, "z": 40.0 }
+        ],
+        "radius": 5.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.1, "y": 0.6, "z": 0.6 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 48.0, "y": 5.0, "z": 120.0 }
+        ],
+        "radius": 5.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.6, "y": 0.6, "z": 1.0 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 5.0, "y": 5.0, "z": 5.0 }
+        ],
+        "radius": 5.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.6, "y": 0.6, "z": 1.0 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 50.0, "y": 419.0, "z": 81.6 }
         ],
         "radius": 300,
         "texture": {

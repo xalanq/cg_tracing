@@ -154,10 +154,13 @@ impl World {
         pool.install(|| {
         let (w, h) = (p.w, p.h);
         let (fw, fh) = (w as Flt, h as Flt);
-        let cx = Vct::new(fw * self.camera.ratio / fh, 0.0, 0.0);
-        let cy = (cx % self.camera.direct).norm() * self.camera.ratio;
+        let cx = Vct::new(fw * self.camera.view_angle / fh, 0.0, 0.0);
+        let cy = (cx % self.camera.direct).norm() * self.camera.view_angle;
         let sample = self.sample / 4;
         let inv = 1.0 / sample as Flt;
+        let camera_direct = self.camera.direct.norm();
+        let max_dim = camera_direct.x.abs().max(camera_direct.y.abs().max(camera_direct.z.abs()));
+        let choose = if max_dim == camera_direct.x.abs() { 0 } else if max_dim == camera_direct.y.abs() { 1 } else { 2 };
         let mut pb = ProgressBar::new((w * h) as u64);
         pb.set_max_refresh_rate(Some(Duration::from_secs(1)));
         let mut data: Vec<(usize, usize)> = Vec::new();
@@ -181,9 +184,23 @@ impl World {
                         let (fsx, fsy) = (sx as Flt, sy as Flt);
                         let ccx = cx * (((fsx + 0.5 + Self::gend(&mut rng)) / 2.0 + fx) / fw - 0.5);
                         let ccy = cy * (((fsy + 0.5 + Self::gend(&mut rng)) / 2.0 + fy) / fh - 0.5);
-                        let d = ccx + ccy + self.camera.direct;
-                        let r = Ray::new(self.camera.origin + d * 130.0, d.norm());
-                        c += self.trace(&r, 0, &mut rng) * inv;
+                        let rand_b = rng.gen() - 0.5;
+                        let rand_a = rng.gen() - 0.5;
+                        let d = camera_direct;
+                        let r = if choose == 0 {
+                            let (y, z) = (rand_a * d.y, rand_b * d.z);
+                            Vct::new(-(y + z) / d.x, rand_a, rand_b)
+                        } else if choose == 1 {
+                            let (x, z) = (rand_a * d.x, rand_b * d.z);
+                            Vct::new(rand_a, -(x + z) / d.y, rand_b)
+                        } else {
+                            let (x, y) = (rand_a * d.x, rand_b * d.y);
+                            Vct::new(rand_a, rand_b, -(x + y) / d.z)
+                        }.norm() * self.camera.aperture * rng.gen();
+                        let d = ccx + ccy + d;
+                        let o = self.camera.origin + r + d * self.camera.plane_distance;
+                        let d = (d.norm() * self.camera.focal_distance - r).norm();
+                        c += self.trace(&Ray::new(o, d), 0, &mut rng) * inv;
                     }
                     sum += Vct::new(clamp(c.x), clamp(c.y), clamp(c.z)) * 0.25;
                 }
