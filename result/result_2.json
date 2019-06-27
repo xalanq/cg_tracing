@@ -1,4 +1,5 @@
 {
+    "path": "./result/result_2.png",
     "width": 1024,
     "height": 768,
     "sample": 25000,
@@ -10,9 +11,9 @@
     "camera": {
         "origin": { "x": 50.0, "y": 52.0,      "z": 295.6 },
         "direct": { "x": 0.0,  "y": -0.042612, "z": -1.0  },
-        "view_angle": 0.5135, 
+        "view_angle_scale": 0.5135, 
         "plane_distance": 130.0,
-        "focal_distance": 120.0,
+        "focal_distance": 0.0,
         "aperture": 0.0
     },
     "objects": [{

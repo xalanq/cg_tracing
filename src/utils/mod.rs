@@ -4,7 +4,7 @@ pub use self::image::Image;
 
 use crate::{
     geo::{
-        collection::{Mesh, Plane, Sphere, BezierRotate},
+        collection::{BezierRotate, Mesh, Plane, Sphere},
         Geo,
     },
     linalg::Camera,
@@ -62,9 +62,10 @@ pub fn new_from_json<T: Geo + DeserializeOwned + 'static>(v: Value) -> Box<dyn G
     Box::new(obj)
 }
 
-pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Image) {
+pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, Image, String) {
     let data = fs::read_to_string(path).expect(&format!("Unable to read {}", path));
     let mut data: Value = serde_json::from_str(&data).expect("Cannot convert to json");
+    let path: String = serde_json::from_value(data["path"].take()).expect("Invalid path");
     let w: usize = serde_json::from_value(data["width"].take()).expect("Invalid width");
     let h: usize = serde_json::from_value(data["height"].take()).expect("Invalid height");
     let p = Image::new(w, h);
@@ -106,7 +107,7 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
                     pb.inc();
                 });
                 pb.finish_println("Loaded.\n");
-                (w, p)
+                (w, p, path)
             })
             .unwrap()
             .join()

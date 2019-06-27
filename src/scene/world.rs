@@ -47,6 +47,15 @@ impl World {
         }
     }
 
+    fn gen(rng: &mut Rng) -> Flt {
+        let r = 2.0 * rng.gen();
+        if r < 1.0 {
+            r.sqrt() - 1.0
+        } else {
+            1.0 - (2.0 - r).sqrt()
+        }
+    }
+
     pub fn add(&mut self, obj: Box<dyn Geo>) -> &mut Self {
         self.objs.push(obj);
         self
@@ -71,7 +80,7 @@ impl World {
         None
     }
 
-    fn trace(&self, r: &Ray, mut depth: usize, rng: &mut Rng) -> Vct {
+    fn pt(&self, r: &Ray, mut depth: usize, rng: &mut Rng) -> Vct {
         if let Some(HitResult { pos, norm, ref texture }) = self.find(r) {
             depth += 1;
             if depth > self.max_depth {
@@ -100,18 +109,18 @@ impl World {
                         .norm();
                     let v = w % u;
                     let d = (u * r1.cos() + v * r1.sin()) * r2s + w * (1.0 - r2).sqrt();
-                    return self.trace(&Ray::new(pos, d.norm()), depth, rng);
+                    return self.pt(&Ray::new(pos, d.norm()), depth, rng);
                 }
                 let refl = Ray::new(pos, r.direct - norm * (2.0 * nd));
                 if texture.material == Material::Specular {
-                    return self.trace(&refl, depth, rng);
+                    return self.pt(&refl, depth, rng);
                 }
                 let w = if nd < 0.0 { norm } else { -norm };
                 let (it, ddw) = (norm.dot(w) > 0.0, r.direct.dot(w));
                 let (n, sign) = if it { (self.n1, 1.0) } else { (self.n2, -1.0) };
                 let cos2t = 1.0 - n * n * (1.0 - ddw * ddw);
                 if cos2t < 0.0 {
-                    return self.trace(&refl, depth, rng);
+                    return self.pt(&refl, depth, rng);
                 }
                 let td = (r.direct * n - norm * ((ddw * n + cos2t.sqrt()) * sign)).norm();
                 let refr = Ray::new(pos, td);
@@ -122,12 +131,12 @@ impl World {
                 if depth > 2 {
                     let p = 0.25 + 0.5 * re;
                     if rng.gen() < p {
-                        self.trace(&refl, depth, rng) * (re / p)
+                        self.pt(&refl, depth, rng) * (re / p)
                     } else {
-                        self.trace(&refr, depth, rng) * (tr / (1.0 - p))
+                        self.pt(&refr, depth, rng) * (tr / (1.0 - p))
                     }
                 } else {
-                    self.trace(&refl, depth, rng) * re + self.trace(&refr, depth, rng) * tr
+                    self.pt(&refl, depth, rng) * re + self.pt(&refr, depth, rng) * tr
                 }
             };
             return texture.emission + color * ff();
@@ -135,17 +144,8 @@ impl World {
         Vct::zero()
     }
 
-    fn gend(rng: &mut Rng) -> Flt {
-        let r = 2.0 * rng.gen();
-        if r < 1.0 {
-            r.sqrt() - 1.0
-        } else {
-            1.0 - (2.0 - r).sqrt()
-        }
-    }
-
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn render(&self, p: &mut Image) {
+    pub fn path_tracing(&self, p: &mut Image) {
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(self.thread_num)
             .stack_size(self.stack_size)
@@ -154,8 +154,8 @@ impl World {
         pool.install(|| {
         let (w, h) = (p.w, p.h);
         let (fw, fh) = (w as Flt, h as Flt);
-        let cx = Vct::new(fw * self.camera.view_angle / fh, 0.0, 0.0);
-        let cy = (cx % self.camera.direct).norm() * self.camera.view_angle;
+        let cx = Vct::new(fw * self.camera.view_angle_scale / fh, 0.0, 0.0);
+        let cy = (cx % self.camera.direct).norm() * self.camera.view_angle_scale;
         let sample = self.sample / 4;
         let inv = 1.0 / sample as Flt;
         let camera_direct = self.camera.direct.norm();
@@ -182,8 +182,8 @@ impl World {
                     let mut c = Vct::zero();
                     for _ in 0..sample {
                         let (fsx, fsy) = (sx as Flt, sy as Flt);
-                        let ccx = cx * (((fsx + 0.5 + Self::gend(&mut rng)) / 2.0 + fx) / fw - 0.5);
-                        let ccy = cy * (((fsy + 0.5 + Self::gend(&mut rng)) / 2.0 + fy) / fh - 0.5);
+                        let ccx = cx * (((fsx + 0.5 + Self::gen(&mut rng)) / 2.0 + fx) / fw - 0.5);
+                        let ccy = cy * (((fsy + 0.5 + Self::gen(&mut rng)) / 2.0 + fy) / fh - 0.5);
                         let rand_b = rng.gen() - 0.5;
                         let rand_a = rng.gen() - 0.5;
                         let d = camera_direct;
@@ -200,7 +200,7 @@ impl World {
                         let d = ccx + ccy + d;
                         let o = self.camera.origin + r + d * self.camera.plane_distance;
                         let d = (d.norm() * self.camera.focal_distance - r).norm();
-                        c += self.trace(&Ray::new(o, d), 0, &mut rng) * inv;
+                        c += self.pt(&Ray::new(o, d), 0, &mut rng) * inv;
                     }
                     sum += Vct::new(clamp(c.x), clamp(c.y), clamp(c.z)) * 0.25;
                 }
