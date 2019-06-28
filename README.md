@@ -44,10 +44,6 @@ See [./result/result_5.json](./result/result_5.json)
 
 ![](./result/result_5.png)
 
-See [./result/result_6.json](./result/result_6.json)
-
-![](./result/result_6.png)
-
 # Bezier
 
 $x(t), y(t)$
@@ -119,9 +115,9 @@ extern crate cg_tracing;
 use cg_tracing::prelude::*;
 
 fn main() {
-    let (w, mut p) = utils::from_json("./result/result_2.json", register! {});
-    w.render(&mut p);
-    p.save_png(&format!("./result/result_2.png", w.sample));
+    let (w, mut p, path) = utils::from_json("./example/result_2.json", register! {});
+    w.stochastic_progressive_photon_mapping(&mut p);
+    p.save_png(&path);
 }
 ```
 

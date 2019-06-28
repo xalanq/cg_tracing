@@ -97,7 +97,6 @@ impl BSPTree {
                 $w.shrink_to_fit();
             };
         }
-        assert!(tri.len() != 0);
         let bbox = {
             let mut min = Vct::new(1e30, 1e30, 1e30);
             let mut max = Vct::new(-1e30, -1e30, -1e30);

@@ -1,4 +1,5 @@
 {
+    "path": "./result/result_5.png",
     "width": 1024,
     "height": 768,
     "sample": 25000,
@@ -8,12 +9,12 @@
     "Na": 1.0,
     "Ng": 1.5,
     "camera": {
-        "origin": { "x": 50.0, "y": 52.0,      "z": 295.6 },
+        "origin": { "x": 50.0, "y": 50.0,      "z": 300.0 },
         "direct": { "x": 0.0,  "y": -0.082612, "z": -1.0  },
-        "view_angle": 0.5135, 
-        "plane_distance": 130.0,
-        "focal_distance": 120.0,
-        "aperture": 0.0
+        "view_angle_scale": 0.5135, 
+        "plane_distance": 140.0,
+        "focal_distance": 100.0,
+        "aperture": 0.7
     },
     "objects": [{
         "type": "plane",
@@ -63,7 +64,7 @@
         "type": "plane",
         "transform": [
             { "type": "rotate", "axis": "x", "degree": 90.0 },
-            { "type": "shift", "x": 0.0, "y": 121.6, "z": 0.0 }
+            { "type": "shift", "x": 0.0, "y": 81.6, "z": 0.0 }
         ],
         "texture": {
             "type": "raw",
@@ -177,7 +178,7 @@
     }, {
         "type": "sphere",
         "transform": [
-            { "type": "shift", "x": 50.0, "y": 419.0, "z": 81.6 }
+            { "type": "shift", "x": 50.0, "y": 380.0, "z": 81.6 }
         ],
         "radius": 300,
         "texture": {
