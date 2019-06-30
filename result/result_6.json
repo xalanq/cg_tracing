@@ -1,0 +1,234 @@
+{
+    "path": "./result/result_6.png",
+    "width": 1024,
+    "height": 768,
+    "thread_num": 0,
+    "stack_size": 267386880,
+    "max_depth": 5,
+    "Na": 1.0,
+    "Ng": 1.5,
+    "renderer": {
+        "type": "pt",
+        "sample": 25000
+    },
+    "camera": {
+        "origin": { "x": 50.0, "y": 100.0,      "z": 300.0 },
+        "direct": { "x": 0.0,  "y": -0.222612, "z": -1.0  },
+        "view_angle_scale": 0.5135, 
+        "plane_distance": 140.0,
+        "focal_distance": 130.0,
+        "aperture": 0.9
+    },
+    "objects": [{
+        "type": "plane",
+        "transform": [
+            { "type": "rotate", "axis": "y", "degree": 90.0 },
+            { "type": "shift", "x": -60.0, "y": 0.0, "z": 0.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.75, "y": 0.25, "z": 0.25 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "plane",
+        "transform": [
+            { "type": "rotate", "axis": "y", "degree": -90.0 },
+            { "type": "shift", "x": 160.0, "y": 0.0, "z": 0.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.25, "y": 0.25, "z": 0.75 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "plane",
+        "transform": [
+            { "type": "rotate", "axis": "x", "degree": 90.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0, "y": 0.0, "z": 0.0 },
+            "color":    { "x": 0.5, "y": 0.5, "z": 0.5 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "plane",
+        "transform": [
+            { "type": "rotate", "axis": "y", "degree": 180.0 },
+            { "type": "shift", "x": 0.0, "y": 0.0, "z": 180.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0, "y": 0.0, "z": 0.0 },
+            "color":    { "x": 0.5, "y": 0.5, "z": 0.5 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "plane",
+        "transform": [
+            { "type": "shift", "x": -60.0, "y": 0.0, "z": 0.0 }
+        ],
+        "texture": {
+            "type": "image",
+            "path": "./assets/final/front.jpg",
+            "material": "diffuse",
+            "width_ratio": 0.22,
+            "height_ratio": 0.22
+        }
+    }, {
+        "type": "plane",
+        "transform": [
+            { "type": "rotate", "axis": "x", "degree": 90.0 },
+            { "type": "shift", "x": 0.0, "y": 140.0, "z": 0.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.5, "y": 0.5, "z": 0.5 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 50.0, "y": 436, "z": 80.0 }
+        ],
+        "radius": 300,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 12.0, "y": 12.0, "z": 12.0 },
+            "color":    { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "mesh",
+        "path": "./assets/final/table.obj",
+        "tree_type": "KDTree",
+        "transform": [
+            { "type": "scale", "x": 0.4, "y": 0.4, "z": 0.4 },
+            { "type": "shift", "x": 20.0, "y": 0.0, "z": 40.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.9, "y": 0.9, "z": 0.9 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "mesh",
+        "path": "./assets/final/dragon.obj",
+        "tree_type": "KDTree",
+        "transform": [
+            { "type": "scale", "x": 1.7, "y": 1.7, "z": 1.7 },
+            { "type": "shift", "x": 2.0, "y": 30.3, "z": 40.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.6, "y": 0.6, "z": 1.0 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "mesh",
+        "path": "./assets/final/chair.obj",
+        "tree_type": "KDTree",
+        "transform": [
+            { "type": "scale", "x": 0.5, "y": 0.5, "z": 0.5 },
+            { "type": "rotate", "axis": "y", "degree": 180.0 },
+            { "type": "shift", "x": 20.0, "y": 0.0, "z": 70.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 1.0, "y": 1.0, "z": 1.0 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "mesh",
+        "path": "./assets/final/sofa.obj",
+        "tree_type": "KDTree",
+        "transform": [
+            { "type": "scale", "x": 0.6, "y": 0.6, "z": 0.6 },
+            { "type": "rotate", "axis": "y", "degree": 3.0 },
+            { "type": "shift", "x": 80.0, "y": 0.0, "z": 30.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.3, "y": 0.3, "z": 0.3 },
+            "material": "diffuse"
+        }
+    }, {
+        "type": "mesh",
+        "path": "./assets/final/goblet.obj",
+        "tree_type": "KDTree",
+        "transform": [
+            { "type": "scale", "x": 3.5, "y": 3.5, "z": 3.5 },
+            { "type": "shift", "x": 38.0, "y": 30.3, "z": 40.0 }
+        ],
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 1, "y": 1, "z": 1 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "bezier_rotate",
+        "point": [
+            [0.0, 0.0],
+            [12.095, 0],
+            [6.427, 16.34],
+            [2.654, 10.383],
+            [4.739, 21.603]
+        ],
+        "transform": [
+            { "type": "scale", "x": 1.8, "y": 1.8, "z": 1.8 },
+            { "type": "shift", "x": 120.0, "y": 0.0, "z": 30.0 }
+        ],
+        "texture": {
+            "type": "image",
+            "path": "./assets/final/vase.jpg",
+            "material": "diffuse",
+            "width_ratio": 1,
+            "height_ratio": 1
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 50.0, "y": 3.0, "z": 90.0 }
+        ],
+        "radius": 3.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 1.0, "y": 0.5, "z": 0.5 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 86.0, "y": 3.0, "z": 35.0 }
+        ],
+        "radius": 3.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.6, "y": 0.6, "z": 1.0 },
+            "material": "refractive"
+        }
+    }, {
+        "type": "sphere",
+        "transform": [
+            { "type": "shift", "x": 30.0, "y": 33.3, "z": 40.0 }
+        ],
+        "radius": 3.0,
+        "texture": {
+            "type": "raw",
+            "emission": { "x": 0.0,  "y": 0.0,  "z": 0.0  },
+            "color":    { "x": 0.6, "y": 1.0, "z": 0.6 },
+            "material": "refractive"
+        }
+    }]
+}

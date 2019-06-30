@@ -1,22 +1,40 @@
 use crate::{linalg::Vct, Flt, EPS};
 
+const ALPHA: Flt = 0.7;
+
 #[derive(Clone, Debug, Default)]
-pub struct Pixel {
-    pub col: Vct,
-    pub sum: Flt,
+pub struct Counter {
+    pub sum: Vct,
+    pub n: Flt,
 }
 
-impl Pixel {
-    pub fn add(&mut self, col: Vct, n: Flt) {
-        self.col += col;
-        self.sum += n;
+impl Counter {
+    pub fn add(&mut self, val: Vct, n: Flt) {
+        self.sum += val;
+        self.n += n;
     }
 
     pub fn get(&self) -> Vct {
-        if self.sum.abs() < EPS {
-            return self.col;
+        if self.n == 0.0 {
+            return Vct::zero();
         }
-        return self.col / self.sum;
+        return self.sum / self.n;
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Pixel {
+    pub n: Flt,
+    pub r2: Flt,
+    pub flux: Vct,
+}
+
+impl Pixel {
+    pub fn add(&mut self, flux: Vct) {
+        let t = (self.n + ALPHA) / (self.n + 1.0);
+        self.n += ALPHA;
+        self.r2 = self.r2 * t;
+        self.flux = (self.flux + flux) * t;
     }
 }
 
@@ -107,7 +125,7 @@ impl KDTree {
         let data = &self.nodes[x].data;
         let len = (*pos - data.pos).len2();
         if len <= self.r2 && data.norm.dot(*norm) >= 0.0 {
-            pixels[data.index].add(*col * data.col * (1.0 - len / self.r2), 1.0);
+            pixels[data.index].add(*col * data.col);
         }
         let (l, r) = (self.nodes[x].l, self.nodes[x].r);
         if l != 0 && self.dist2(l, pos) < EPS {
