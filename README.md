@@ -7,6 +7,8 @@ A Rust implement of path tracing and ray tracing in computer graphics.
 
 see the [report](./report.pdf)
 
+![](./result/result_6.png)
+
 # Usage
 
 ## example (from json, recommended)
