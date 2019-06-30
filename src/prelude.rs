@@ -1,5 +1,5 @@
 pub use crate::{
     geo::Material,
-    linalg::{Camera, Mat, Ray, Vct},
+    linalg::{Mat, Ray, Vct},
     *,
 };

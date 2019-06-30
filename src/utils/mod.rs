@@ -7,8 +7,7 @@ use crate::{
         collection::{BezierRotate, Mesh, Plane, Sphere},
         Geo,
     },
-    linalg::Camera,
-    scene::{Renderer, World},
+    scene::{Camera, Renderer, World},
     Flt,
 };
 use pbr::ProgressBar;

@@ -1,8 +1,8 @@
-use super::sppm::{KDTree, Pixel, Point};
+use super::{Camera, sppm::{KDTree, Pixel, Point}};
 use crate::{
     geo::Material,
     geo::{Geo, HitResult},
-    linalg::{Camera, Ray, Vct},
+    linalg::{Ray, Vct},
     utils::{clamp, Image, Rng},
     Deserialize, Flt, Serialize, EPS, PI,
 };
