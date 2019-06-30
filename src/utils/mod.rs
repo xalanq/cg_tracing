@@ -8,7 +8,7 @@ use crate::{
         Geo,
     },
     linalg::Camera,
-    scene::World,
+    scene::{Renderer, World},
     Flt,
 };
 use pbr::ProgressBar;
@@ -70,7 +70,6 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
     let h: usize = serde_json::from_value(data["height"].take()).expect("Invalid height");
     let p = Image::new(w, h);
     let camera: Camera = serde_json::from_value(data["camera"].take()).expect("Invalid camera");
-    let sample: usize = serde_json::from_value(data["sample"].take()).expect("Invalid sample");
     let max_depth: usize =
         serde_json::from_value(data["max_depth"].take()).expect("Invalid maximum depth");
     let thread_num: usize =
@@ -79,7 +78,9 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
         serde_json::from_value(data["stack_size"].take()).expect("Invalid stack size");
     let na: Flt = serde_json::from_value(data["Na"].take()).expect("Invalid Na");
     let ng: Flt = serde_json::from_value(data["Ng"].take()).expect("Invalid Ng");
-    let mut w = World::new(camera, sample, max_depth, thread_num, stack_size, na, ng);
+    let renderer: Renderer =
+        serde_json::from_value(data["renderer"].take()).expect("Invalid renderer");
+    let mut w = World::new(camera, max_depth, thread_num, stack_size, na, ng, renderer);
     match data["objects"].take() {
         Value::Array(objs) => thread::Builder::new()
             .stack_size(stack_size)
@@ -106,7 +107,7 @@ pub fn from_json(path: &str, custom: HashMap<String, FromJsonFunc>) -> (World, I
                     };
                     pb.inc();
                 });
-                pb.finish_println("Loaded.\n");
+                pb.finish_println("...loaded\n");
                 (w, p, path)
             })
             .unwrap()

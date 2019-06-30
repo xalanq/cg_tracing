@@ -49,7 +49,7 @@ impl Image {
         });
         file.write_all(data.as_bytes()).expect(errmsg);
         file.flush().expect(errmsg);
-        println!("Done!");
+        println!("...done");
     }
 
     pub fn save_png(&self, path: &str) {
@@ -62,6 +62,6 @@ impl Image {
             }
         }
         imgbuf.save(&path).expect(&format!("cannot save PNG to {}", path));
-        println!("Done!");
+        println!("...done");
     }
 }

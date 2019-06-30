@@ -2,12 +2,15 @@
     "path": "./result/result_4.png",
     "width": 1024,
     "height": 768,
-    "sample": 25000,
     "thread_num": 0,
     "stack_size": 267386880,
     "max_depth": 5,
     "Na": 1.0,
     "Ng": 1.5,
+    "renderer": {
+        "type": "pt",
+        "sample": 25000
+    },
     "camera": {
         "origin": { "x": 50.0, "y": 50.0,      "z": 300.0 },
         "direct": { "x": 0.0,  "y": -0.082612, "z": -1.0  },

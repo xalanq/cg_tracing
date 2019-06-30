@@ -1,3 +1,4 @@
+mod sppm;
 pub mod world;
 
-pub use world::World;
+pub use world::{Renderer, World, PT, SPPM};
