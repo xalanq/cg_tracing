@@ -1,4 +1,7 @@
-use super::{Camera, sppm::{KDTree, Pixel, Point}};
+use super::{
+    sppm::{Counter, KDTree, Pixel, Point},
+    Camera,
+};
 use crate::{
     geo::Material,
     geo::{Geo, HitResult},
@@ -258,8 +261,12 @@ impl World {
         points: &mut Vec<Point>,
         prod: Vct,
         index: usize,
+        prob: Flt,
     ) {
         if prod.x.max(prod.y.max(prod.z)) < EPS {
+            return;
+        }
+        if prob < EPS {
             return;
         }
         depth += 1;
@@ -284,7 +291,7 @@ impl World {
             let nd = norm.dot(r.direct);
             let refl = Ray::new(pos, r.direct - norm * (2.0 * nd));
             if texture.material == Material::Specular {
-                self.sppm_1(&refl, depth, rng, points, prod, index);
+                self.sppm_1(&refl, depth, rng, points, prod, index, prob);
                 return;
             }
             let w = if nd < 0.0 { norm } else { -norm };
@@ -292,7 +299,7 @@ impl World {
             let (n, sign) = if it { (self.n1, 1.0) } else { (self.n2, -1.0) };
             let cos2t = 1.0 - n * n * (1.0 - ddw * ddw);
             if cos2t < 0.0 {
-                self.sppm_1(&refl, depth, rng, points, prod, index);
+                self.sppm_1(&refl, depth, rng, points, prod, index, prob);
                 return;
             }
             let td = (r.direct * n - norm * ((ddw * n + cos2t.sqrt()) * sign)).norm();
@@ -304,13 +311,13 @@ impl World {
             if depth > 2 {
                 let p = 0.25 + 0.5 * re;
                 if rng.gen() < p {
-                    self.sppm_1(&refl, depth, rng, points, prod * (re / p), index);
+                    self.sppm_1(&refl, depth, rng, points, prod, index, prob * (re / p));
                 } else {
-                    self.sppm_1(&refr, depth, rng, points, prod * (tr / (1.0 - p)), index);
+                    self.sppm_1(&refr, depth, rng, points, prod, index, prob * (tr / (1.0 - p)));
                 }
             } else {
-                self.sppm_1(&refl, depth, rng, points, prod * re, index);
-                self.sppm_1(&refr, depth, rng, points, prod * tr, index);
+                self.sppm_1(&refl, depth, rng, points, prod, index, prob * re);
+                self.sppm_1(&refr, depth, rng, points, prod, index, prob * tr);
             }
         }
     }
@@ -322,9 +329,9 @@ impl World {
         rng: &mut Rng,
         tree: &KDTree,
         pixels: &mut Vec<Pixel>,
-        prod: Vct,
+        flux: Vct,
     ) {
-        if prod.x.max(prod.y.max(prod.z)) < EPS {
+        if flux.x.max(flux.y.max(flux.z)) < EPS {
             return;
         }
         depth += 1;
@@ -343,7 +350,7 @@ impl World {
             }
             let nd = norm.dot(r.direct);
             if texture.material == Material::Diffuse {
-                tree.update(&pos, &norm, &prod, pixels);
+                tree.update(&pos, &norm, &flux, pixels);
                 let w = if nd < 0.0 { norm } else { -norm };
                 let (r1, r2) = (PI * 2.0 * rng.gen(), rng.gen());
                 let r2s = r2.sqrt();
@@ -355,13 +362,13 @@ impl World {
                     .norm();
                 let v = w % u;
                 let d = (u * r1.cos() + v * r1.sin()) * r2s + w * (1.0 - r2).sqrt();
-                self.sppm_2(&Ray::new(pos, d.norm()), depth, rng, tree, pixels, prod * color);
+                self.sppm_2(&Ray::new(pos, d.norm()), depth, rng, tree, pixels, flux * color);
                 return;
             }
-            let prod = prod * color;
+            let flux = flux * color;
             let refl = Ray::new(pos, r.direct - norm * (2.0 * nd));
             if texture.material == Material::Specular {
-                self.sppm_2(&refl, depth, rng, tree, pixels, prod);
+                self.sppm_2(&refl, depth, rng, tree, pixels, flux);
                 return;
             }
             let w = if nd < 0.0 { norm } else { -norm };
@@ -369,7 +376,7 @@ impl World {
             let (n, sign) = if it { (self.n1, 1.0) } else { (self.n2, -1.0) };
             let cos2t = 1.0 - n * n * (1.0 - ddw * ddw);
             if cos2t < 0.0 {
-                self.sppm_2(&refl, depth, rng, tree, pixels, prod);
+                self.sppm_2(&refl, depth, rng, tree, pixels, flux);
                 return;
             }
             let td = (r.direct * n - norm * ((ddw * n + cos2t.sqrt()) * sign)).norm();
@@ -377,17 +384,16 @@ impl World {
             let c = if it { 1.0 + ddw } else { 1.0 - td.dot(norm) };
             let cc = c * c;
             let re = self.r0 + (1.0 - self.r0) * cc * cc * c;
-            let tr = 1.0 - re;
             if depth > 2 {
                 let p = 0.25 + 0.5 * re;
                 if rng.gen() < p {
-                    self.sppm_2(&refl, depth, rng, tree, pixels, prod * (re / p));
+                    self.sppm_2(&refl, depth, rng, tree, pixels, flux);
                 } else {
-                    self.sppm_2(&refr, depth, rng, tree, pixels, prod * (tr / (1.0 - p)));
+                    self.sppm_2(&refr, depth, rng, tree, pixels, flux);
                 }
             } else {
-                self.sppm_2(&refl, depth, rng, tree, pixels, prod * re);
-                self.sppm_2(&refr, depth, rng, tree, pixels, prod * tr);
+                self.sppm_2(&refl, depth, rng, tree, pixels, flux);
+                self.sppm_2(&refr, depth, rng, tree, pixels, flux);
             }
         }
     }
@@ -419,7 +425,7 @@ impl World {
         println!("photon samples: {}, total rounds: {}, init radius: {}, radius decay: {}", photon_sample * thread_num, rounds, radius, radius_decay);
         println!("Start rendering with {} threads.", pool.current_num_threads());
         let s_time = time::Instant::now();
-        let mut final_pixel = vec![Pixel::default(); w * h];
+        let mut final_pixel = vec![Vct::zero(); w * h];
 
         for iter in 0..rounds {
             println!("Round: {}, radius: {}", iter + 1, radius);
@@ -455,7 +461,7 @@ impl World {
                             let d = ccx + ccy + d;
                             let o = self.camera.origin + r + d * self.camera.plane_distance;
                             let d = (d.norm() * self.camera.focal_distance - r).norm();
-                            self.sppm_1(&Ray::new(o, d), 0, &mut rng, &mut points, Vct::one() * 0.25, index);
+                            self.sppm_1(&Ray::new(o, d), 0, &mut rng, &mut points, Vct::one() * 0.35 / (iter + 1) as Flt, index, 1.0);
                         }
                     }
                 }
@@ -472,7 +478,7 @@ impl World {
             let mut pb = ProgressBar::new((photon_sample * thread_num) as u64);
             pb.set_max_refresh_rate(Some(Duration::from_secs(1)));
             let pb = Mutex::new(pb);
-            let total_pixel = Mutex::new(vec![Pixel::default(); w * h]);
+            let total_pixel = Mutex::new(vec![Counter::default(); w * h]);
             println!("Running sppm2");
             (0..thread_num).into_par_iter().for_each(|index| {
                 let mut pixels = vec![Pixel::default(); w * h];
@@ -487,14 +493,14 @@ impl World {
                     if d.y < 0.0 {
                         d.y = -d.y;
                     }
-                    self.sppm_2(&Ray::new(o, d), 0, &mut rng, &tree, &mut pixels, Vct::one() * 8.0);
+                    self.sppm_2(&Ray::new(o, d), 0, &mut rng, &tree, &mut pixels, Vct::one());
                     if i % 100 == 0 {
                         pb.lock().unwrap().add(100);
                     }
                 }
                 let mut total = total_pixel.lock().unwrap();
                 for i in 0..pixels.len() {
-                    total[i].add(pixels[i].col, pixels[i].sum);
+                    total[i].add(pixels[i].flux, pixels[i].n);
                 }
                 pb.lock().unwrap().add(photon_sample as u64 % 100);
             });
@@ -502,13 +508,13 @@ impl World {
 
             let total = total_pixel.lock().unwrap();
             for i in 0..total.len() {
-                final_pixel[i].add(total[i].get(), 1.0);
+                final_pixel[i] += total[i].get();
             }
             radius *= radius_decay;
 
             for x in 0..w {
                 for y in 0..h {
-                    p.set(x, h - y - 1, final_pixel[y * w + x].get());
+                    p.set(x, h - y - 1, final_pixel[y * w + x]);
                 }
             }
             p.save_png(&format!("./result/test/test_{}.png", iter));
@@ -516,7 +522,7 @@ impl World {
 
         for x in 0..w {
             for y in 0..h {
-                p.set(x, h - y - 1, final_pixel[y * w + x].get());
+                p.set(x, h - y - 1, final_pixel[y * w + x]);
             }
         }
 

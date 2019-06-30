@@ -5,109 +5,13 @@
 
 A Rust implement of path tracing and ray tracing in computer graphics.
 
-# Feature
-
-- Fast: Render with multithreads (Use [rayon](https://github.com/rayon-rs/rayon/))
-- Texture: Pin what you want!
-- Expandable: Easy to add a geometric object (see example)
-- Json: Build from json file, see example
-- Structural: More OOP
-- Progress bar: Use [a8m/pb](https://github.com/a8m/pb)
-
-# Result
-
-## Textures (sample 25000)
-
-See [./result/result_1.json](./result/result_1.json)
-
-![](./result/result_1.png)
-
-## Mesh dragon.obj (sample 25000)
-
-See [./result/result_2.json](./result/result_2.json)
-
-![](./result/result_2.png)
-
-## Rotate Surface by Bezier Curve (sample 25000)
-
-See [./result/result_3.json](./result/result_3.json)
-
-![](./result/result_3.png)
-
-## Depth of field (sample 25000)
-
-See [./result/result_4.json](./result/result_4.json)
-
-![](./result/result_4.png)
-
-See [./result/result_5.json](./result/result_5.json)
-
-![](./result/result_5.png)
-
-# Bezier
-
-$x(t), y(t)$
-$$
-k = \frac{y(t) - y_o}{y_d}, x(t) = \sqrt{(x_o + k x_d)^2 + (z_o + k z_d)^2}
-$$
-
-平方后两边乘$y_d^2$，有
-$$
-y_d^2 x^2(t) = [x_o y_d + (y(t) - y_o) x_d]^2 + [z_o y_d + (y(t) - y_o) z_d]^2
-$$
-则令
-
-$$
-\begin{align}
-f(t) 
-= & [x_o y_d + (y(t) - y_o) x_d]^2 + [z_o y_d + (y(t) - y_o) z_d]^2 - y_d^2 x^2(t) \\
-= & (x_d^2 + z_d^2) y^2(t) + 2[(x_o y_d - y_o x_d) x_d + (z_o y_d - y_o z_d) z_d] y(t) + \\
-& (x_o y_d - y_o x_d)^2 + (z_o y_d - y_o z_d)^2 - y_d^2 x^2(t) \\
-= & a y^2(t) + b y(t) + c + w x^2(t)
-\end{align}
-$$
-
-其中
-$$
-a = x_d^2 + z_d^2, \quad b = 2[(x_o y_d - y_o x_d) x_d + (z_o y_d - y_o z_d) z_d] \\
-c = (x_o y_d - y_o x_d)^2 + (z_o y_d - y_o z_d)^2, \quad w = -y_d^2
-$$
-则
-
-$$
-f'(t) = 2 a y(t) y'(t) + b y'(t) + 2 w x(t) x'(t)
-$$
-
-牛顿迭代求出 $t$ 后，再推 $k$ 即可。但若 $y_d = 0$，则再解个方程即可（此时 $t$ 已经求出）。
-$$
-\begin{align}
-&
-(x_o + k x_d)^2 + (z_o + k z_d)^2 = x^2(t) \\
-\Rightarrow &
-(x_d^2 + z_d^2) k^2 + 2(x_o x_d + z_o z_d) k + x_o^2 + x_d^2 - x^2(t) = 0
-\end{align}
-$$
-
-若 $x(t) \neq 0$ 法向量
-
-$$
-P(t, \theta) = (x(t) \cos \theta, y(t), x(t) \sin \theta)
-$$
-
-$$
-\begin{align}
-\frac{\partial P(t, \theta)}{\partial t} \times \frac{\partial P(t, \theta)}{\partial \theta}
-& = (x'(t) \cos \theta, y'(t), x'(t) \sin \theta)) \times (-x(t) \sin \theta, 0, x(t) \cos \theta)
-\end{align}
-$$
-
-当 $x(t) = 0$ 时，法向量直接为 $(0, -y_d, 0)$
+see the [report](./report.pdf)
 
 # Usage
 
 ## example (from json, recommended)
 
-see [./result/result_2.json](./result/result.json).
+see [./result/result_6.json](./result/result_6.json).
 
 ```rust
 extern crate cg_tracing;
@@ -115,15 +19,15 @@ extern crate cg_tracing;
 use cg_tracing::prelude::*;
 
 fn main() {
-    let (w, mut p, path) = utils::from_json("./example/result_2.json", register! {});
-    w.stochastic_progressive_photon_mapping(&mut p);
+    let (w, mut p, path) = utils::from_json("./result/result_6.json", register! {});
+    w.render(&mut p);
     p.save_png(&path);
 }
 ```
 
 ## Add your geometric object
 
-see [./src/geo/plane.rs](./src/geo/plane.rs)
+see [./src/geo/plane.rs](./src/geo/collection/plane.rs)
 
 ```rust
 use crate::{
@@ -188,13 +92,8 @@ if you want to use `from_json` with your object
 
 ```rust
 use cg_tracing::prelude::*;
-let (w, mut p) = cg_tracing::from_json("some.json", register! {
+let (w, mut p, path) = utils::from_json("./result/result_6.json", register! {
     "YourObject1" => YourObjectClass1,
     "YourObject2" => YourObjectClass2
 });
 ```
-
-# Reference
-
-- [smallpt](http://www.kevinbeason.com/smallpt/)
-- [go-tracing](https://github.com/xalanq/go-tracing)
