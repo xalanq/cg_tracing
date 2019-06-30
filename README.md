@@ -29,7 +29,7 @@ fn main() {
 
 ## Add your geometric object
 
-see [./src/geo/plane.rs](./src/geo/collection/plane.rs)
+see [./src/geo/collection/plane.rs](./src/geo/collection/plane.rs)
 
 ```rust
 use crate::{
